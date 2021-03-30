@@ -20,7 +20,7 @@ ApplicationWindow {
     minimumHeight: imageWriter.isEmbeddedMode() ? -1 : 420
     //maximumHeight: imageWriter.isEmbeddedMode() ? -1 : 420
 
-    title: qsTr("Raspberry Pi Imager v%1").arg(imageWriter.constantVersion())
+    title: qsTr("ADI Kuiper Imager v%1").arg(imageWriter.constantVersion())
 
     FontLoader {id: roboto;      source: "fonts/Roboto-Regular.ttf"}
     FontLoader {id: robotoLight; source: "fonts/Roboto-Light.ttf"}
@@ -63,14 +63,14 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 fillMode: Image.PreserveAspectFit
-                source: window.height > 700 ? "icons/rpi2-hires.png" : "icons/rpi2.png"
+                source: "icons/Kuiper.svg"
                 width: window.width
                 height: window.height/2
             }
         }
 
         Rectangle {
-            color: "#c31c4a"
+            color: "#b8b8f2"
             implicitWidth: window.width
             implicitHeight: window.height/2
 
@@ -120,7 +120,7 @@ ApplicationWindow {
                             osswipeview.currentItem.forceActiveFocus()
                         }
                         Material.background: "#ffffff"
-                        Material.foreground: "#c51a4a"
+                        Material.foreground: "#000000"
                         Accessible.ignored: ospopup.visible || dstpopup.visible
                         Accessible.description: qsTr("Select this button to change the operating system")
                         Accessible.onPressAction: clicked()
@@ -158,7 +158,7 @@ ApplicationWindow {
                             dstlist.forceActiveFocus()
                         }
                         Material.background: "#ffffff"
-                        Material.foreground: "#c51a4a"
+                        Material.foreground: "#000000"
                         Accessible.ignored: ospopup.visible || dstpopup.visible
                         Accessible.description: qsTr("Select this button to change the destination storage device")
                         Accessible.onPressAction: clicked()
@@ -186,7 +186,7 @@ ApplicationWindow {
 
                         enabled: false
                         Material.background: "#ffffff"
-                        Material.foreground: "#c51a4a"
+                        Material.foreground: "#000000"
                         onClicked: {
                             if (!imageWriter.readyToWrite()) {
                                 return
@@ -234,7 +234,7 @@ ApplicationWindow {
                             imageWriter.cancelWrite()
                         }
                         Material.background: "#ffffff"
-                        Material.foreground: "#c51a4a"
+                        Material.foreground: "#000000"
                         Layout.alignment: Qt.AlignRight
                         visible: false
                         font.family: roboto.name
@@ -249,7 +249,7 @@ ApplicationWindow {
                             imageWriter.setVerifyEnabled(false)
                         }
                         Material.background: "#ffffff"
-                        Material.foreground: "#c51a4a"
+                        Material.foreground: "#000000"
                         Layout.alignment: Qt.AlignRight
                         visible: false
                         font.family: roboto.name
