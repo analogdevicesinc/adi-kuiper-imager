@@ -124,7 +124,7 @@ Popup {
                         TextField {
                             id: fieldHostname
                             enabled: chkHostname.checked
-                            text: "raspberrypi"
+                            text: "analog"
                         }
                         Text {
                             text : ".local"
@@ -168,7 +168,7 @@ Popup {
                             enabled: radioPasswordAuthentication.checked
 
                             Text {
-                                text: qsTr("Set password for 'pi' user:")
+                                text: qsTr("Set password for 'analog' user:")
                                 color: parent.enabled ? (fieldUserPassword.indicateError ? "red" : "black") : "grey"
                             }
                             TextField {
@@ -209,7 +209,7 @@ Popup {
                             enabled: radioPubKeyAuthentication.checked
 
                             Text {
-                                text: qsTr("Set authorized_keys for 'pi':")
+                                text: qsTr("Set authorized_keys for 'analog':")
                                 color: parent.enabled ? "black" : "grey"
                             }
                             TextField {
