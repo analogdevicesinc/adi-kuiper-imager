@@ -83,7 +83,7 @@ ApplicationWindow {
                 anchors.rightMargin: 50
                 anchors.leftMargin: 50
 
-                rows: 3
+                rows: 4
                 columns: 3
                 columnSpacing: 25
 
@@ -125,6 +125,41 @@ ApplicationWindow {
                         Accessible.description: qsTr("Select this button to change the operating system")
                         Accessible.onPressAction: clicked()
                     }
+
+                    Text {
+                        id: text3
+                        color: "#ffffff"
+                        text: qsTr("Platform")
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 17
+                        Layout.preferredWidth: 100
+                        font.pixelSize: 12
+                        font.family: robotoBold.name
+                        font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+
+                    ComboBox {
+                        id: platform
+                        font.family: roboto.name
+                        spacing: 0
+                        padding: 0
+                        bottomPadding: 0
+                        topPadding: 0
+                        Layout.minimumHeight: 40
+                        Layout.fillWidth: true
+                        onCurrentTextChanged: { selectPlatform(); }
+                        model: ListModel {
+                            id: platform_model
+                            dynamicRoles: true       
+                            Component.onCompleted: {
+                                if (imageWriter.isOnline()) {
+                                    fetchProjlist();
+                                }
+                            }
+                        }
+
+                    }
                 }
 
                 ColumnLayout {
@@ -162,6 +197,38 @@ ApplicationWindow {
                         Accessible.ignored: ospopup.visible || dstpopup.visible
                         Accessible.description: qsTr("Select this button to change the destination storage device")
                         Accessible.onPressAction: clicked()
+                    }
+
+                    Text {
+                        id: text4
+                        color: "#ffffff"
+                        text: qsTr("Project")
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 17
+                        Layout.preferredWidth: 100
+                        font.pixelSize: 12
+                        font.family: robotoBold.name
+                        font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+
+                    ComboBox {
+                        id: project
+                        font.family: roboto.name
+                        spacing: 0
+                        padding: 0
+                        bottomPadding: 0
+                        topPadding: 0
+                        Layout.minimumHeight: 40
+                        Layout.fillWidth: true
+                        onCurrentTextChanged: {
+                            var project_str = platform.currentText + project.currentText
+                            imageWriter.setProjectCustomization(project_str)
+                        }
+                        model: ListModel {
+                            id: project_model
+                            dynamicRoles: true
+                        }
                     }
                 }
 
@@ -970,6 +1037,52 @@ ApplicationWindow {
                     }
                 }
             }
+        })
+    }
+
+    function projlistFromJson(o) {
+        if (!"proj_list" in o) {
+            onError(qsTr("Error parsing proj_list.json"))
+            return false
+        }
+
+        return o["proj_list"]
+    }
+
+    function fetchProjlist() {
+        httpRequest(imageWriter.constantProjListUrl(), function (x) {
+            var o = JSON.parse(x.responseText)
+            var projlist = projlistFromJson(o)
+            if (projlist === false)
+                return
+
+            for (var i in projlist) {
+                platform_model.append({"name" : projlist[i].name})
+            }
+            platform.currentIndex = 0
+        })
+    }
+
+    function isArray(what) {
+        return Object.prototype.toString.call(what) === '[object Array]';
+    }
+
+    function selectPlatform() {
+        httpRequest(imageWriter.constantProjListUrl(), function (x) {
+            var o = JSON.parse(x.responseText)
+            var projlist = projlistFromJson(o)
+
+            project_model.clear()
+
+            if (isArray(projlist[platform.currentIndex].project)) {
+                for (var i in projlist[platform.currentIndex].project) {
+                    project_model.append({"project" : projlist[platform.currentIndex].project[i]})
+                }
+            } else {
+                project_model.append({"project" : projlist[platform.currentIndex].project})
+            }
+
+            project.currentIndex = 0
         })
     }
 

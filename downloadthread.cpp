@@ -692,17 +692,11 @@ void DownloadThread::_writeComplete()
     _filename.replace("/dev/rdisk", "/dev/disk");
 #endif
 
-    if (_ejectEnabled && _config.isEmpty() && _cmdline.isEmpty())
+     if (!_customizeImage())
+        return;
+
+    if (_ejectEnabled)
         eject_disk(_filename.constData());
-
-    if (!_config.isEmpty() || !_cmdline.isEmpty())
-    {
-        if (!_customizeImage())
-            return;
-
-        if (_ejectEnabled)
-            eject_disk(_filename.constData());
-    }
 
     emit success();
 }
@@ -802,6 +796,35 @@ void DownloadThread::setImageCustomization(const QByteArray &config, const QByte
     _config = config;
     _cmdline = cmdline;
     _firstrun = firstrun;
+}
+
+void DownloadThread::setProjectCustomization(const QByteArray &project)
+{
+    _project = project;
+}
+
+bool DownloadThread::_setupProject(QString folder, QByteArray project)
+{
+    /* Copy project files */
+    QString basepath(folder + "/" + project);
+    QDirIterator dirIterator(basepath, {"*.BIN", "*.dtb", "*.rbf"}, QDir::Files, QDirIterator::Subdirectories);
+
+    while (dirIterator.hasNext()) {
+       QString src(dirIterator.next());
+       QString dst = folder + "/" + dirIterator.fileName();
+
+       QFile::copy(src, dst);
+       qDebug() << dst;
+    }
+
+    /* Setup the kernel image */
+    if (project.contains("zynqmp")) {
+        QFile::copy(folder + "/" + "zynqmp-common/Image", folder + "/Image"); //copy kernel image for Zynqmp
+    } else if (project.contains("zynq")) {
+        QFile::copy(folder + "/" + "zynq-common/uImage", folder + "/uImage"); //copy kernel image for Zynq
+    }
+
+    return true;
 }
 
 bool DownloadThread::_customizeImage()
@@ -1028,6 +1051,14 @@ bool DownloadThread::_customizeImage()
         else
         {
             emit error(tr("Error writing to cmdline.txt on FAT partition"));
+            return false;
+        }
+    }
+
+    if (!_project.isEmpty())
+    {
+        if (!_setupProject(folder, _project)) {
+            emit error(tr("Error writing project files on FAT partition"));
             return false;
         }
     }

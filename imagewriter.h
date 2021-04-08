@@ -64,6 +64,9 @@ public:
     /* Function to return OS list URL */
     Q_INVOKABLE QUrl constantOsListUrl() const;
 
+    /* Function to return OS list URL */
+    Q_INVOKABLE QUrl constantProjListUrl() const;
+
     /* Function to return version */
     Q_INVOKABLE QString constantVersion() const;
 
@@ -103,6 +106,7 @@ public:
     Q_INVOKABLE bool getBoolSetting(const QString &key);
     Q_INVOKABLE void setSetting(const QString &key, const QVariant &value);
     Q_INVOKABLE void setImageCustomization(const QByteArray &config, const QByteArray &cmdline, const QByteArray &firstrun);
+    Q_INVOKABLE void setProjectCustomization(const QByteArray &project);
     Q_INVOKABLE void setSavedCustomizationSettings(const QVariantMap &map);
     Q_INVOKABLE QVariantMap getSavedCustomizationSettings();
     Q_INVOKABLE void clearSavedCustomizationSettings();
@@ -140,9 +144,9 @@ protected slots:
     void onPreparationStatusUpdate(QString msg);
 
 protected:
-    QUrl _src, _repo;
+    QUrl _src, _repo, _proj;
     QString _dst, _cacheFileName, _parentCategory, _osName;
-    QByteArray _expectedHash, _cachedFileHash, _cmdline, _config, _firstrun;
+    QByteArray _expectedHash, _cachedFileHash, _cmdline, _config, _firstrun, _project;
     quint64 _downloadLen, _extrLen, _devLen, _dlnow, _verifynow;
     DriveListModel _drivelist;
     QQmlApplicationEngine *_engine;
