@@ -8,7 +8,10 @@
 
 
 /* Repository URL */
-#define OSLIST_URL                        "https://raw.githubusercontent.com/analogdevicesinc/adi-kuiper-imager/update_imager/os_list.json"
+#define OSLIST_URL                        "https://raw.githubusercontent.com/analogdevicesinc/adi-kuiper-imager/qml/os_list.json"
+
+/* Projects URL */
+#define PROJLIST_URL                      "https://raw.githubusercontent.com/analogdevicesinc/adi-kuiper-imager/qml/proj_list.json"
 
 /* Time synchronization URL (only used on eglfs QPA platform, URL must be HTTP) */
 #define TIME_URL                          "https://raw.githubusercontent.com/analogdevicesinc/adi-kuiper-imager/update_imager/os_list.json"
