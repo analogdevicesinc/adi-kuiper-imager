@@ -49,7 +49,7 @@
 #endif
 
 ImageWriter::ImageWriter(QObject *parent)
-    : QObject(parent), _repo(QUrl(QString(OSLIST_URL))), _dlnow(0), _verifynow(0),
+    : QObject(parent), _repo(QUrl(QString(OSLIST_URL))), _proj(QUrl(QString(PROJLIST_URL))), _dlnow(0), _verifynow(0),
       _engine(nullptr), _thread(nullptr), _verifyEnabled(false), _cachingEnabled(false),
       _embeddedMode(false), _online(false)
 {
@@ -222,6 +222,7 @@ void ImageWriter::startWrite()
     _thread->setVerifyEnabled(_verifyEnabled);
     _thread->setUserAgent(QString("Mozilla/5.0 rpi-imager/%1").arg(constantVersion()).toUtf8());
     _thread->setImageCustomization(_config, _cmdline, _firstrun);
+    _thread->setProjectCustomization(_project);
 
     if (!_expectedHash.isEmpty() && _cachedFileHash != _expectedHash && _cachingEnabled)
     {
@@ -329,6 +330,12 @@ QString ImageWriter::srcFileName()
 QUrl ImageWriter::constantOsListUrl() const
 {
     return _repo;
+}
+
+/* Function to return Projects list URL */
+QUrl ImageWriter::constantProjListUrl() const
+{
+    return _proj;
 }
 
 /* Function to return version */
@@ -909,6 +916,13 @@ void ImageWriter::setImageCustomization(const QByteArray &config, const QByteArr
     qDebug() << "Custom config.txt entries:" << config;
     qDebug() << "Custom cmdline.txt entries:" << cmdline;
     qDebug() << "Custom firstuse.sh:" << firstrun;
+}
+
+void ImageWriter::setProjectCustomization(const QByteArray &project)
+{
+    _project = project;
+
+    qDebug() << "Custom project:" << project;
 }
 
 QString ImageWriter::crypt(const QByteArray &password)
