@@ -1,9 +1,6 @@
-# rpi-imager
+# adi-kuiper-imager
 
-Raspberry Pi Imaging Utility
-
-- Download the latest version for Windows, macOS and Ubuntu from the [Raspberry Pi downloads page](https://www.raspberrypi.org/downloads/).
-- To install on Raspberry Pi OS, use `sudo apt update && sudo apt install rpi-imager`.
+ADI Kuiper Imager Imaging Utility
 
 ## License
 
@@ -27,13 +24,13 @@ sudo apt install --no-install-recommends build-essential devscripts debhelper cm
 #### Get the source
 
 ```
-git clone --depth 1 https://github.com/raspberrypi/rpi-imager
+git clone --depth 1 https://github.com/analogdevicesinc/adi-kuiper-imager.git
 ```
 
 #### Build the Debian package
 
 ```
-cd rpi-imager
+cd adi-kuiper-imager
 debuild -uc -us
 ```
 
@@ -42,7 +39,7 @@ Can install it with apt:
 
 ```
 cd ..
-sudo apt install ./rpi-imager*.deb
+sudo apt install ./adi-kuiper-imager*.deb
 ```
 
 It should create an icon in the start menu under "Utilities" or "Accessories".
@@ -62,13 +59,13 @@ sudo yum install git gcc gcc-c++ make cmake libarchive-devel libcurl-devel opens
 #### Get the source
 
 ```
-git clone --depth 1 https://github.com/raspberrypi/rpi-imager
+git clone --depth 1 https://github.com/analogdevicesinc/adi-kuiper-imager.git
 ```
 
 #### Build and install the software
 
 ```
-cd rpi-imager
+cd adi-kuiper-imager
 cmake .
 make
 sudo make install
