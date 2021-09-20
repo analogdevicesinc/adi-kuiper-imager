@@ -6,7 +6,7 @@ if (APPLE)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "" FORCE)
 endif()
 
-project(rpi-imager LANGUAGES CXX C)
+project(kuiper-imager LANGUAGES CXX C)
 set(IMAGER_VERSION_MAJOR 1)
 set(IMAGER_VERSION_MINOR 6)
 set(IMAGER_VERSION_STR "${IMAGER_VERSION_MAJOR}.${IMAGER_VERSION_MINOR}.1")
@@ -41,7 +41,7 @@ elseif (UNIX)
 elseif (WIN32)
     set(DEPENDENCIES acceleratedcryptographichash.cpp dependencies/mountutils/src/windows/functions.cpp dependencies/drivelist/src/windows/list.cpp
         windows/winfile.cpp windows/winfile.h
-        windows/rpi-imager.rc)
+        windows/kuiper-imager.rc)
     find_package(Qt5WinExtras REQUIRED)
     set(EXTRALIBS setupapi wlanapi Qt5::WinExtras)
 endif()
@@ -167,8 +167,8 @@ if (WIN32)
             "${CMAKE_BINARY_DIR}/deploy")
 
     configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/windows/rpi-imager.nsi.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/rpi-imager.nsi"
+        "${CMAKE_CURRENT_SOURCE_DIR}/windows/kuiper-imager.nsi.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/kuiper-imager.nsi"
         @ONLY)
 
     add_custom_command(TARGET ${PROJECT_NAME}
@@ -237,14 +237,14 @@ else()
     endif()
 
     configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/linux/rpi-imager.metainfo.xml.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/rpi-imager.metainfo.xml"
+        "${CMAKE_CURRENT_SOURCE_DIR}/linux/kuiper-imager.metainfo.xml.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/kuiper-imager.metainfo.xml"
         @ONLY)
 
-    install(TARGETS rpi-imager DESTINATION bin)
-    install(FILES icons/rpi-imager.png DESTINATION share/icons/hicolor/128x128/apps)
-    install(FILES linux/rpi-imager.desktop DESTINATION share/applications)
-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/rpi-imager.metainfo.xml" DESTINATION share/metainfo)
+    install(TARGETS kuiper-imager DESTINATION bin)
+    install(FILES icons/kuiper-imager.png DESTINATION share/icons/hicolor/128x128/apps)
+    install(FILES linux/kuiper-imager.desktop DESTINATION share/applications)
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/kuiper-imager.metainfo.xml" DESTINATION share/metainfo)
 endif()
 
 get_target_property(QT_TARGET_TYPE Qt5::Core TYPE)

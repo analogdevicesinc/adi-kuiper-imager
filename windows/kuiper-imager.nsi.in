@@ -4,25 +4,25 @@
 #              by Vlasis K. Barkas aka Red Wine red_wine@freemail.gr Sep 2006               
 ############################################################################################
 
-!define APP_NAME "Raspberry Pi Imager"
-!define COMP_NAME "Raspberry Pi"
-#!define WEB_SITE "https://www.raspberrypi.org/"
-!define VERSION "@IMAGER_VERSION_STR@"
+!define APP_NAME "Kuiper Imager"
+!define COMP_NAME "Kuiper"
+#!define WEB_SITE "https://www.analog.com"
+!define VERSION "1.6.1"
 !define INSTALLER_NAME "imager-${VERSION}.exe"
-!define COPYRIGHT "Raspberry Pi"
-!define DESCRIPTION "Raspberry Pi Imager"
-!define MAIN_APP_EXE "rpi-imager.exe"
+!define COPYRIGHT "Kuiper"
+!define DESCRIPTION "Kuiper Imager"
+!define MAIN_APP_EXE "kuiper-imager.exe"
 !define INSTALL_TYPE "SetShellVarContext current"
 !define REG_ROOT "HKCU"
 !define REG_APP_PATH "Software\Microsoft\Windows\CurrentVersion\App Paths\${MAIN_APP_EXE}"
 !define UNINSTALL_PATH "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
 
 # Window to close if running
-!define EXE_TO_TERMINATE "rpi-imager.exe"
+!define EXE_TO_TERMINATE "kuiper-imager.exe"
 
 ######################################################################
 
-VIProductVersion "@IMAGER_VERSION_MAJOR@.@IMAGER_VERSION_MINOR@.0.0"
+VIProductVersion "1.6.0.0"
 VIAddVersionKey "ProductName"  "${APP_NAME}"
 VIAddVersionKey "CompanyName"  "${COMP_NAME}"
 VIAddVersionKey "LegalCopyright"  "${COPYRIGHT}"
@@ -38,7 +38,7 @@ OutFile "${INSTALLER_NAME}"
 BrandingText "${APP_NAME}"
 XPStyle on
 InstallDirRegKey "${REG_ROOT}" "${REG_APP_PATH}" ""
-InstallDir "$PROGRAMFILES\Raspberry Pi Imager"
+InstallDir "$PROGRAMFILES\Kuiper Imager"
 
 ######################################################################
 
@@ -89,7 +89,7 @@ InstallDir "$PROGRAMFILES\Raspberry Pi Imager"
 
 !ifdef REG_START_MENU
 !define MUI_STARTMENUPAGE_NODISABLE
-!define MUI_STARTMENUPAGE_DEFAULTFOLDER "Raspberry Pi"
+!define MUI_STARTMENUPAGE_DEFAULTFOLDER "Kuiper"
 !define MUI_STARTMENUPAGE_REGISTRY_ROOT "${REG_ROOT}"
 !define MUI_STARTMENUPAGE_REGISTRY_KEY "${UNINSTALL_PATH}"
 !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "${REG_START_MENU}"
@@ -115,14 +115,14 @@ InstallDir "$PROGRAMFILES\Raspberry Pi Imager"
 !insertmacro MUI_LANGUAGE "Dutch"
 !insertmacro MUI_LANGUAGE "Italian"
 
-LangString termMsg ${LANG_ENGLISH} "Raspberry Pi Imager seems to be running and busy.$\nDo you want to terminate process?"
-LangString stopMsg ${LANG_ENGLISH} "Stopping Raspberry Pi Imager"
+LangString termMsg ${LANG_ENGLISH} "Kuiper Imager seems to be running and busy.$\nDo you want to terminate process?"
+LangString stopMsg ${LANG_ENGLISH} "Stopping Kuiper Imager"
 LangString win7Msg ${LANG_ENGLISH} "Windows 7 or above required"
-LangString termMsg ${LANG_DUTCH} "Raspberry Pi Imager is momenteel actief.$\nWilt u het programma afsluiten?"
-LangString stopMsg ${LANG_DUTCH} "Bezig met afsluiten Raspberry Pi Imager"
+LangString termMsg ${LANG_DUTCH} "Kuiper Imager is momenteel actief.$\nWilt u het programma afsluiten?"
+LangString stopMsg ${LANG_DUTCH} "Bezig met afsluiten Kuiper Imager"
 LangString win7Msg ${LANG_DUTCH} "Minimaal Windows 7 is vereist"
-LangString termMsg ${LANG_ITALIAN} "Raspberry Pi Imager sembra essere in esecuzione e occupato.$\nVuoi terminare il processo Raspberry Pi Imager?"
-LangString stopMsg ${LANG_ITALIAN} "Chiusura processo Raspberry Pi Imager"
+LangString termMsg ${LANG_ITALIAN} "Kuiper Imager sembra essere in esecuzione e occupato.$\nVuoi terminare il processo Kuiper Imager?"
+LangString stopMsg ${LANG_ITALIAN} "Chiusura processo Kuiper Imager"
 LangString win7Msg ${LANG_ITALIAN} "Per l'esecuzione del programma è richiesto Windows 7 o versioni successive"
 
 ######################################################################
@@ -243,7 +243,7 @@ File "deploy\Qt5QuickTemplates2.dll"
 File "deploy\Qt5Svg.dll"
 File "deploy\Qt5Widgets.dll"
 File "deploy\Qt5WinExtras.dll"
-File "deploy\rpi-imager.exe"
+File "deploy\kuiper-imager.exe"
 SetOutPath "$INSTDIR\styles"
 File "deploy\styles\qwindowsvistastyle.dll"
 SetOutPath "$INSTDIR\QtQuick.2"
@@ -641,11 +641,11 @@ CreateShortCut "$SMPROGRAMS\$SM_Folder\${APP_NAME} Website.lnk" "$INSTDIR\${APP_
 !endif
 
 !ifndef REG_START_MENU
-CreateDirectory "$SMPROGRAMS\Raspberry Pi"
-CreateShortCut "$SMPROGRAMS\Raspberry Pi\${APP_NAME}.lnk" "$INSTDIR\${MAIN_APP_EXE}"
+CreateDirectory "$SMPROGRAMS\Kuiper"
+CreateShortCut "$SMPROGRAMS\Kuiper\${APP_NAME}.lnk" "$INSTDIR\${MAIN_APP_EXE}"
 !ifdef WEB_SITE
 WriteIniStr "$INSTDIR\${APP_NAME} website.url" "InternetShortcut" "URL" "${WEB_SITE}"
-CreateShortCut "$SMPROGRAMS\Raspberry Pi\${APP_NAME} Website.lnk" "$INSTDIR\${APP_NAME} website.url"
+CreateShortCut "$SMPROGRAMS\Kuiper\${APP_NAME} Website.lnk" "$INSTDIR\${APP_NAME} website.url"
 !endif
 !endif
 
@@ -665,8 +665,8 @@ WriteRegStr SHCTX "Software\Classes\.zip\OpenWithProgIds" "RPI_IMAGINGUTILITY" "
 WriteRegStr SHCTX "Software\Classes\.gz\OpenWithProgIds" "RPI_IMAGINGUTILITY" ""
 WriteRegStr SHCTX "Software\Classes\.xz\OpenWithProgIds" "RPI_IMAGINGUTILITY" ""
 WriteRegStr SHCTX "Software\Classes\.img\OpenWithProgIds" "RPI_IMAGINGUTILITY" ""
-WriteRegStr SHCTX "Software\Classes\RPI_IMAGINGUTILITY\shell\open" "FriendlyAppName" "Raspberry Pi Imager"
-WriteRegStr SHCTX "Software\Classes\RPI_IMAGINGUTILITY\shell\open\command" "" '"$INSTDIR\rpi-imager.exe" "%1"'
+WriteRegStr SHCTX "Software\Classes\RPI_IMAGINGUTILITY\shell\open" "FriendlyAppName" "Kuiper Imager"
+WriteRegStr SHCTX "Software\Classes\RPI_IMAGINGUTILITY\shell\open\command" "" '"$INSTDIR\kuiper-imager.exe" "%1"'
 
 SectionEnd
 
@@ -699,7 +699,7 @@ Delete "$INSTDIR\Qt5Widgets.dll"
 Delete "$INSTDIR\Qt5WinExtras.dll"
 # Old name
 Delete "$INSTDIR\imagingutility.exe"
-Delete "$INSTDIR\rpi-imager.exe"
+Delete "$INSTDIR\kuiper-imager.exe"
 Delete "$INSTDIR\styles\qwindowsvistastyle.dll"
 Delete "$INSTDIR\QtQuick.2\plugins.qmltypes"
 Delete "$INSTDIR\QtQuick.2\qmldir"
@@ -1096,11 +1096,11 @@ RmDir "$SMPROGRAMS\$SM_Folder"
 !endif
 
 !ifndef REG_START_MENU
-Delete "$SMPROGRAMS\Raspberry Pi\${APP_NAME}.lnk"
+Delete "$SMPROGRAMS\Kuiper\${APP_NAME}.lnk"
 !ifdef WEB_SITE
-Delete "$SMPROGRAMS\Raspberry Pi\${APP_NAME} Website.lnk"
+Delete "$SMPROGRAMS\Kuiper\${APP_NAME} Website.lnk"
 !endif
-RmDir "$SMPROGRAMS\Raspberry Pi"
+RmDir "$SMPROGRAMS\Kuiper"
 !endif
 
 DeleteRegKey ${REG_ROOT} "${REG_APP_PATH}"
@@ -1115,10 +1115,10 @@ DeleteRegKey SHCTX "Software\Classes\RPI_IMAGINGUTILITY"
 
 DeleteRegKey ${REG_ROOT} ""
 
-RMDir /r "$APPDATA\Raspberry Pi\Imager"
-RMDir "$APPDATA\Raspberry Pi"
-RMDir /r "$LOCALAPPDATA\Raspberry Pi\Imager"
-RMDir "$LOCALAPPDATA\Raspberry Pi"
+RMDir /r "$APPDATA\Kuiper\Imager"
+RMDir "$APPDATA\Kuiper"
+RMDir /r "$LOCALAPPDATA\Kuiper\Imager"
+RMDir "$LOCALAPPDATA\Kuiper"
 
 SectionEnd
 
