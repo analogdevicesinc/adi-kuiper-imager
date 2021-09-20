@@ -8,11 +8,11 @@
             "name": "ADI Kuiper Linux (32-bit)",
             "description": "ADI flavoured Linux operating system based on RPI OS (Recommended)",
             "icon": "icons/Kuiper_ico.png",
-            "url": "https://swdownloads.analog.com/cse/kuiper/2021-02-23-ADI-Kuiper.img.xz",
-            "extract_size": 10104078336,
-            "extract_sha256": "afce1a45fc633607281ca6c7dd22a974a6cb56b9318a7e3d4b41b1b6f0a68236",
-            "image_download_size": 2637950856,
-            "release_date": "2021-02-23"
+            "url": "https://swdownloads.analog.com/cse/kuiper/image_2021-07-28-ADI-Kuiper-full.zip",
+            "extract_size": 11580473344,
+            "extract_sha256": "84045fe2b2508c7ac3884ee1f92efeea01fe7276182c1c69c36ef74ea8c8edd0",
+            "image_download_size": 4188153462,
+            "release_date": "2021-07-28"
         },
         {
             "name": "Misc utility images",
