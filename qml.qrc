@@ -31,5 +31,6 @@
         <file>icons/Kuiper_300.png</file>
         <file>icons/Kuiper_w.svg</file>
         <file>icons/Kuiper_w_300.png</file>
+        <file>icons/kuiper-imager.ico</file>
     </qresource>
 </RCC>
