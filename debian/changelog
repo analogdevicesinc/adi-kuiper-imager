@@ -1,3 +1,9 @@
+kuiper-imager (1.6.2) unstable; urgency=medium
+
+  * Initial ADI kuiper-imager relase based on rpi-imager 1.6.1
+
+ -- Sergiu Cuciurean <sergiu.cuciurean@analog.com>  Thu, 16 Sep 2021 22:34:56 +0100
+
 rpi-imager (1.6.1) unstable; urgency=medium
 
   * When saving advanced options delay modifying files

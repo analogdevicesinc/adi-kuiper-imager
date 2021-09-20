@@ -803,11 +803,21 @@ void DownloadThread::setProjectCustomization(const QByteArray &project)
     _project = project;
 }
 
-bool DownloadThread::_setupProject(QString folder, QByteArray project)
+bool DownloadThread::_setupProject(QString folder)
 {
+#ifdef Q_OS_WIN
+    WinFile bootloader;
+#elif defined(Q_OS_LINUX)
+    QByteArray partition = _filename;
+    QFile _volumeFile;
+    QFile bootloader;
+#else
+
+#endif
     /* Copy project files */
-    QString basepath(folder + "/" + project);
-    QDirIterator dirIterator(basepath, {"*.BIN", "*.dtb", "*.rbf"}, QDir::Files, QDirIterator::Subdirectories);
+    QString basepath(folder + "/" + _project);
+    //TODO: remove *Image and .bin when the kuiper image structure changes
+    QDirIterator dirIterator(basepath, {"*.BIN", "*.bin", "*.dtb", "*.rbf", "*.scr", "*Image", "*.img"}, QDir::Files, QDirIterator::Subdirectories);
 
     while (dirIterator.hasNext()) {
        QString src(dirIterator.next());
@@ -818,10 +828,50 @@ bool DownloadThread::_setupProject(QString folder, QByteArray project)
     }
 
     /* Setup the kernel image */
-    if (project.contains("zynqmp")) {
-        QFile::copy(folder + "/" + "zynqmp-common/Image", folder + "/Image"); //copy kernel image for Zynqmp
-    } else if (project.contains("zynq")) {
-        QFile::copy(folder + "/" + "zynq-common/uImage", folder + "/uImage"); //copy kernel image for Zynq
+    if (_project.contains("zynq")) {
+        if (_project.contains("zynqmp"))
+            QFile::copy(folder + "/" + "zynqmp-common/Image", folder + "/Image"); //copy kernel image for Zynqmp
+        else if (_project.contains("zynq"))
+            QFile::copy(folder + "/" + "zynq-common/uImage", folder + "/uImage"); //copy kernel image for Zynq
+    } else if (_project.contains("socfpga")) {
+        if (_project.contains("arria10"))
+            QFile::copy(folder + "/" + "socfpga_arria10-common/zImage", folder + "/zImage");
+        //TODO: Add cyclone5 folder
+//        else if (_project.contains("cyclone5"))
+//            QFile::copy(folder + "/" + "socfpga_cyclone5-common/zImage", folder + "/zImage");
+
+    bootloader.setFileName(folder + "/preloader_bootloader.img");
+
+    if (!bootloader.open(QIODevice::ReadWrite)) {
+        qDebug() << "Can't open bootloader file";
+        return false;
+    }
+
+    bootloader.read(_bootloaderBuf, _numSectors * _sectorSize);
+    bootloader.close();
+
+#ifdef Q_OS_LINUX
+        if (isdigit(partition.at(partition.length()-1)))
+            partition += "p3";
+        else
+            partition += "3";
+        _volumeFile.setFileName(partition);
+#endif
+        if (!_volumeFile.open(QIODevice::WriteOnly)) {
+            qDebug() << "Failed to open bootloader partition";
+            return false;
+        }
+#ifdef Q_OS_WIN
+        if(!_volumeFile.lockVolume())
+            return false;
+        if(!_volumeFile.seek(_startSector * _sectorSize))
+            return false;
+#endif
+        if (!_volumeFile.write(_bootloaderBuf, _numSectors * _sectorSize)) {
+            qDebug() << "Failed to write the bootloader to partition";
+            return false;
+        }
+        _volumeFile.close();
     }
 
     return true;
@@ -1057,7 +1107,7 @@ bool DownloadThread::_customizeImage()
 
     if (!_project.isEmpty())
     {
-        if (!_setupProject(folder, _project)) {
+        if (!_setupProject(folder)) {
             emit error(tr("Error writing project files on FAT partition"));
             return false;
         }

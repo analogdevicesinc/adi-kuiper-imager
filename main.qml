@@ -13,13 +13,10 @@ ApplicationWindow {
     id: window
     visible: true
 
-    width: imageWriter.isEmbeddedMode() ? -1 : 680
-    height: imageWriter.isEmbeddedMode() ? -1 : 420
-    minimumWidth: imageWriter.isEmbeddedMode() ? -1 : 680
-    //maximumWidth: imageWriter.isEmbeddedMode() ? -1 : 680
-    minimumHeight: imageWriter.isEmbeddedMode() ? -1 : 420
-    //maximumHeight: imageWriter.isEmbeddedMode() ? -1 : 420
-
+    width:  640
+    height: 440
+    minimumWidth: 640
+    minimumHeight: 440
     title: qsTr("ADI Kuiper Imager v%1").arg(imageWriter.constantVersion())
 
     FontLoader {id: roboto;      source: "fonts/Roboto-Regular.ttf"}
@@ -53,226 +50,297 @@ ApplicationWindow {
 
     ColumnLayout {
         id: bg
+        height: 420
+        anchors.fill: parent
         spacing: 0
 
         Rectangle {
+            id: rectangle
+            y: 0
+            width: 640
+            height: 160
+            Layout.preferredHeight: 120
+            clip: false
+            Layout.fillHeight: false
+            Layout.fillWidth: true
             implicitHeight: window.height/2
 
             Image {
                 id: image
+                anchors.fill: parent
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-                fillMode: Image.PreserveAspectFit
                 source: "icons/Kuiper.svg"
-                width: window.width
-                height: window.height/2
+                fillMode: Image.PreserveAspectFit
+                sourceSize.height: 126
+                sourceSize.width: 805
+                clip: false
             }
         }
 
         Rectangle {
-            color: "#b8b8f2"
+            id: rectangle1
+            y: 160
+            height: 260
+            color: "#e78925"
+            Layout.preferredWidth: -1
+            Layout.preferredHeight: -1
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+            clip: true
             implicitWidth: window.width
             implicitHeight: window.height/2
 
+
             GridLayout {
                 id: gridLayout
-                rowSpacing: 25
-
+                y: 30
+                height: 260
                 anchors.fill: parent
-                anchors.topMargin: 25
                 anchors.rightMargin: 50
                 anchors.leftMargin: 50
+                anchors.bottomMargin: 15
+                anchors.topMargin: 28
+                clip: false
+                rowSpacing: 25
 
-                rows: 4
-                columns: 3
+                transformOrigin: Item.Center
+
+                rows: 2
+                columns: 1
                 columnSpacing: 25
 
-                ColumnLayout {
-                    id: columnLayout
-                    spacing: 0
-                    Layout.fillWidth: true
 
-                    Text {
-                        id: text1
-                        color: "#ffffff"
-                        text: qsTr("Operating System")
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 17
-                        Layout.preferredWidth: 100
-                        font.pixelSize: 12
-                        font.family: robotoBold.name
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                    }
+                Row {
+                    id: row
+                    width: 540
+                    height: 400
+                    spacing: 10
 
-                    Button {
-                        id: osbutton
-                        text: imageWriter.srcFileName() === "" ? qsTr("CHOOSE OS") : imageWriter.srcFileName()
-                        font.family: roboto.name
+                    ColumnLayout {
+                        id: columnLayout
+                        width: 360
+                        height: 200
+                        clip: false
+                        Layout.fillHeight: false
                         spacing: 0
-                        padding: 0
-                        bottomPadding: 0
-                        topPadding: 0
-                        Layout.minimumHeight: 40
-                        Layout.fillWidth: true
-                        onClicked: {
-                            ospopup.open()
-                            osswipeview.currentItem.forceActiveFocus()
+                        Layout.fillWidth: false
+
+                        Text {
+                            id: tPLatform
+                            color: "#ffffff"
+                            text: qsTr("Platform")
+                            font.pixelSize: 12
+                            horizontalAlignment: Text.AlignHCenter
+                            font.bold: true
+                            Layout.preferredHeight: 17
+                            Layout.fillWidth: true
+                            font.family: robotoBold.name
+                            Layout.preferredWidth: 100
                         }
-                        Material.background: "#ffffff"
-                        Material.foreground: "#000000"
-                        Accessible.ignored: ospopup.visible || dstpopup.visible
-                        Accessible.description: qsTr("Select this button to change the operating system")
-                        Accessible.onPressAction: clicked()
-                    }
 
-                    Text {
-                        id: text3
-                        color: "#ffffff"
-                        text: qsTr("Platform")
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 17
-                        Layout.preferredWidth: 100
-                        font.pixelSize: 12
-                        font.family: robotoBold.name
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                    }
-
-                    ComboBox {
-                        id: platform
-                        font.family: roboto.name
-                        spacing: 0
-                        padding: 0
-                        bottomPadding: 0
-                        topPadding: 0
-                        Layout.minimumHeight: 40
-                        Layout.fillWidth: true
-                        onCurrentTextChanged: { selectPlatform(); }
-                        model: ListModel {
-                            id: platform_model
-                            dynamicRoles: true       
-                            Component.onCompleted: {
-                                if (imageWriter.isOnline()) {
-                                    fetchProjlist();
+                        ComboBox {
+                            id: cbPlatform
+                            width: 360
+                            Layout.minimumHeight: 40
+                            bottomPadding: 0
+                            Layout.fillWidth: true
+                            onCurrentTextChanged: {
+                                updateList("carrier");
+                            }
+                            model: ListModel {
+                                id: platform_model
+                                Component.onCompleted: {
+                                    if (imageWriter.isOnline()) {
+                                        updateList("platform");
+                                    }
                                 }
                             }
+                            font.family: roboto.name
+                            spacing: 0
+                            padding: 0
+                            topPadding: 0
                         }
 
-                    }
-                }
-
-                ColumnLayout {
-                    id: columnLayout2
-                    spacing: 0
-                    Layout.fillWidth: true
-
-                    Text {
-                        id: text2
-                        color: "#ffffff"
-                        text: qsTr("Storage")
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 17
-                        Layout.preferredWidth: 100
-                        font.pixelSize: 12
-                        font.family: robotoBold.name
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                    }
-
-                    Button {
-                        id: dstbutton
-                        text: qsTr("CHOOSE STORAGE")
-                        font.family: roboto.name
-                        Layout.minimumHeight: 40
-                        Layout.preferredWidth: 100
-                        Layout.fillWidth: true
-                        onClicked: {
-                            imageWriter.startDriveListPolling()
-                            dstpopup.open()
-                            dstlist.forceActiveFocus()
+                        Text {
+                            id: tCarrier
+                            color: "#ffffff"
+                            text: qsTr("Carrier")
+                            font.pixelSize: 12
+                            horizontalAlignment: Text.AlignHCenter
+                            font.bold: true
+                            Layout.preferredHeight: 17
+                            Layout.fillWidth: true
+                            font.family: robotoBold.name
+                            Layout.preferredWidth: 100
                         }
-                        Material.background: "#ffffff"
-                        Material.foreground: "#000000"
-                        Accessible.ignored: ospopup.visible || dstpopup.visible
-                        Accessible.description: qsTr("Select this button to change the destination storage device")
-                        Accessible.onPressAction: clicked()
+
+                        ComboBox {
+                            id: cbCarrier
+                            width: 360
+                            Layout.minimumHeight: 40
+                            bottomPadding: 0
+                            Layout.fillWidth: true
+                            onCurrentTextChanged: {
+                                updateList("daughterboard");
+                            }
+                            model: ListModel {
+                                id: carrier_model
+                            }
+                            font.family: roboto.name
+                            spacing: 0
+                            padding: 0
+                            topPadding: 0
+                        }
+
+                        Text {
+                            id: tProject
+                            color: "#ffffff"
+                            text: qsTr("Project")
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 17
+                            Layout.preferredWidth: 100
+                            font.pixelSize: 12
+                            font.family: robotoBold.name
+                            font.bold: true
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+
+                        ComboBox {
+                            id: cbProject
+                            width: 360
+                            font.family: roboto.name
+                            spacing: 0
+                            padding: 0
+                            bottomPadding: 0
+                            topPadding: 0
+                            Layout.minimumHeight: 40
+                            Layout.fillWidth: true
+                            onCurrentTextChanged: {
+                                setProjectPath()
+                            }
+                            model: ListModel {
+                                id: project_model
+                            }
+                        }
                     }
 
-                    Text {
-                        id: text4
-                        color: "#ffffff"
-                        text: qsTr("Project")
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 17
-                        Layout.preferredWidth: 100
-                        font.pixelSize: 12
-                        font.family: robotoBold.name
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                    }
-
-                    ComboBox {
-                        id: project
-                        font.family: roboto.name
+                    ColumnLayout {
+                        id: columnLayout1
+                        width: 180
+                        height: 200
+                        clip: false
+                        Layout.fillHeight: false
+                        Layout.fillWidth: false
                         spacing: 0
-                        padding: 0
-                        bottomPadding: 0
-                        topPadding: 0
-                        Layout.minimumHeight: 40
-                        Layout.fillWidth: true
-                        onCurrentTextChanged: {
-                            var project_str = platform.currentText + project.currentText
-                            imageWriter.setProjectCustomization(project_str)
+
+
+                        Text {
+                            id: text2
+                            color: "#ffffff"
+                            text: qsTr("Storage")
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 17
+                            Layout.preferredWidth: 50
+                            font.pixelSize: 12
+                            font.family: robotoBold.name
+                            font.bold: true
+                            horizontalAlignment: Text.AlignHCenter
                         }
-                        model: ListModel {
-                            id: project_model
-                            dynamicRoles: true
+
+                        Button {
+                            id: dstbutton
+                            text: qsTr("CHOOSE STORAGE")
+                            font.family: roboto.name
+                            Layout.minimumHeight: 40
+                            Layout.preferredWidth: 50
+                            Layout.fillWidth: true
+                            onClicked: {
+                                imageWriter.startDriveListPolling()
+                                dstpopup.open()
+                                dstlist.forceActiveFocus()
+                            }
+                            Material.background: "#ffffff"
+                            Material.foreground: "#000000"
+                            Accessible.ignored: ospopup.visible || dstpopup.visible
+                            Accessible.description: qsTr("Select this button to change the destination storage device")
+                            Accessible.onPressAction: clicked()
+                        }
+
+
+
+                        Text {
+                            id: text1
+                            color: "#ffffff"
+                            text: qsTr("Operating System")
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 17
+                            Layout.preferredWidth: 50
+                            font.pixelSize: 12
+                            font.family: robotoBold.name
+                            font.bold: true
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+
+                        Button {
+                            id: osbutton
+                            width: 160
+                            text: imageWriter.srcFileName() === "" ? qsTr("CHOOSE OS") : imageWriter.srcFileName()
+                            Layout.preferredWidth: 50
+                            font.family: roboto.name
+                            spacing: 0
+                            padding: 0
+                            bottomPadding: 0
+                            topPadding: 0
+                            Layout.minimumHeight: 40
+                            Layout.fillWidth: true
+                            onClicked: {
+                                ospopup.open()
+                                osswipeview.currentItem.forceActiveFocus()
+                            }
+                            Material.background: "#ffffff"
+                            Material.foreground: "#000000"
+                            Accessible.ignored: ospopup.visible || dstpopup.visible
+                            Accessible.description: qsTr("Select this button to change the operating system")
+                            Accessible.onPressAction: clicked()
+                        }
+                        Text {
+                            text: " "
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 17
+                            Layout.preferredWidth: 50
+                        }
+                        Button {
+                            id: writebutton
+                            text: qsTr("WRITE")
+                            Layout.preferredWidth: 50
+                            Layout.minimumHeight: 40
+                            enabled: false
+                            Material.foreground: "#000000"
+                            onClicked: {
+                                if (!imageWriter.readyToWrite()) {
+                                    return
+                                }
+
+                                if (!optionspopup.initialized && imageWriter.hasSavedCustomizationSettings()) {
+                                    usesavedsettingspopup.openPopup()
+                                } else {
+                                    confirmwritepopup.askForConfirmation()
+                                }
+                            }
+                            Layout.fillWidth: true
+                            Material.background: "#ffffff"
+                            font.family: roboto.name
+                            Accessible.onPressAction: clicked()
                         }
                     }
                 }
 
-                ColumnLayout {
-                    spacing: 0
-                    Layout.fillWidth: true
-
-                    Text {
-                        text: " "
-                        Layout.preferredHeight: 17
-                        Layout.preferredWidth: 100
-                    }
-
-                    Button {
-                        id: writebutton
-                        text: qsTr("WRITE")
-                        font.family: roboto.name
-                        Layout.minimumHeight: 40
-                        Layout.fillWidth: true
-                        Accessible.ignored: ospopup.visible || dstpopup.visible
-                        Accessible.description: qsTr("Select this button to start writing the image")
-
-                        enabled: false
-                        Material.background: "#ffffff"
-                        Material.foreground: "#000000"
-                        onClicked: {
-                            if (!imageWriter.readyToWrite()) {
-                                return
-                            }
-
-                            if (!optionspopup.initialized && imageWriter.hasSavedCustomizationSettings()) {
-                                usesavedsettingspopup.openPopup()
-                            } else {
-                                confirmwritepopup.askForConfirmation()
-                            }
-                        }
-                        Accessible.onPressAction: clicked()
-                    }
-                }
-
-                ColumnLayout {
-                    id: columnLayout3
-                    Layout.columnSpan: 3
-                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                RowLayout {
+                    id: rowLayout
+                    width: 540
+                    height: 50
 
                     Text {
                         id: progressText
@@ -294,6 +362,7 @@ ApplicationWindow {
 
                     Button {
                         id: cancelwritebutton
+                        width: 160
                         text: qsTr("CANCEL WRITE")
                         onClicked: {
                             enabled = false
@@ -307,8 +376,10 @@ ApplicationWindow {
                         font.family: roboto.name
                         Accessible.onPressAction: clicked()
                     }
+
                     Button {
                         id: cancelverifybutton
+                        width: 160
                         text: qsTr("CANCEL VERIFY")
                         onClicked: {
                             enabled = false
@@ -506,18 +577,18 @@ ApplicationWindow {
             Accessible.name: name+".\n"+description
 
             Rectangle {
-               id: bgrect
-               anchors.fill: parent
-               color: "#f5f5f5"
-               visible: mouseOver && parent.ListView.view.currentIndex !== index
-               property bool mouseOver: false
+                id: bgrect
+                anchors.fill: parent
+                color: "#f5f5f5"
+                visible: mouseOver && parent.ListView.view.currentIndex !== index
+                property bool mouseOver: false
             }
             Rectangle {
-               id: borderrect
-               implicitHeight: 1
-               implicitWidth: parent.width
-               color: "#dcdcdc"
-               y: parent.height
+                id: borderrect
+                implicitHeight: 1
+                implicitWidth: parent.width
+                color: "#dcdcdc"
+                y: parent.height
             }
 
             Row {
@@ -534,7 +605,7 @@ ApplicationWindow {
                     }
                     Text {
                         text: " "
-//                      visible: !icon
+                        //                      visible: !icon
                     }
                 }
                 Column {
@@ -722,19 +793,19 @@ ApplicationWindow {
             property string size: model.size
 
             Rectangle {
-               id: dstbgrect
-               anchors.fill: parent
-               color: "#f5f5f5"
-               visible: mouseOver && parent.ListView.view.currentIndex !== index
-               property bool mouseOver: false
+                id: dstbgrect
+                anchors.fill: parent
+                color: "#f5f5f5"
+                visible: mouseOver && parent.ListView.view.currentIndex !== index
+                property bool mouseOver: false
 
             }
             Rectangle {
-               id: dstborderrect
-               implicitHeight: 1
-               implicitWidth: parent.width
-               color: "#dcdcdc"
-               y: parent.height
+                id: dstborderrect
+                implicitHeight: 1
+                implicitWidth: parent.width
+                color: "#dcdcdc"
+                y: parent.height
             }
 
             Row {
@@ -1049,40 +1120,60 @@ ApplicationWindow {
         return o["proj_list"]
     }
 
-    function fetchProjlist() {
+    function updateList(list) {
         httpRequest(imageWriter.constantProjListUrl(), function (x) {
             var o = JSON.parse(x.responseText)
             var projlist = projlistFromJson(o)
+            var i, platform
             if (projlist === false)
                 return
 
-            for (var i in projlist) {
-                platform_model.append({"name" : projlist[i].name})
+            writebutton.enabled = false
+
+            switch (list) {
+            case "platform":
+                platform_model.clear()
+                for (i in projlist) {
+                    platform_model.append({"name" : projlist[i].name})
+                }
+                break
+            case "carrier":
+                platform = projlist[cbPlatform.currentIndex]
+                var boardlist = platform["board"]
+
+                carrier_model.clear()
+                for (i in boardlist) {
+                    carrier_model.append({"name" : boardlist[i].name})
+                }
+                break
+            case "daughterboard":
+                platform = projlist[cbPlatform.currentIndex]
+                var board = platform.board[cbCarrier.currentIndex]
+
+                project_model.clear()
+                for (i in board.daughterboard) {
+                    project_model.append({"daughterboard" : board.daughterboard[i]})
+                }
+                break
             }
-            platform.currentIndex = 0
         })
     }
-
-    function isArray(what) {
-        return Object.prototype.toString.call(what) === '[object Array]';
-    }
-
-    function selectPlatform() {
+    function setProjectPath(){
         httpRequest(imageWriter.constantProjListUrl(), function (x) {
             var o = JSON.parse(x.responseText)
             var projlist = projlistFromJson(o)
+            var platform = projlist[cbPlatform.currentIndex]
+            var board = platform.board[cbCarrier.currentIndex]
+            var daughterboard = board.daughterboard[cbProject.currentIndex]
+            var board_path = board.path.concat(daughterboard)
 
-            project_model.clear()
-
-            if (isArray(projlist[platform.currentIndex].project)) {
-                for (var i in projlist[platform.currentIndex].project) {
-                    project_model.append({"project" : projlist[platform.currentIndex].project[i]})
-                }
+            imageWriter.setProjectCustomization(board_path)
+            console.log(board_path)
+            if (imageWriter.readyToWrite()) {
+                writebutton.enabled = true
             } else {
-                project_model.append({"project" : projlist[platform.currentIndex].project})
+                writebutton.enabled = false
             }
-
-            project.currentIndex = 0
         })
     }
 
@@ -1185,3 +1276,9 @@ ApplicationWindow {
         }
     }
 }
+
+/*##^##
+Designer {
+    D{i:0;height:440;width:640}
+}
+##^##*/

@@ -153,7 +153,7 @@ protected:
     void _closeFiles();
     QByteArray _fileGetContentsTrimmed(const QString &filename);
     bool _customizeImage();
-    bool _setupProject(QString folder, QByteArray project);
+    bool _setupProject(QString folder);
 
     /*
      * libcurl callbacks
@@ -179,6 +179,14 @@ protected:
     time_t _lastModified, _serverTime, _lastFailureTime;
     QElapsedTimer _timer;
     int _inputBufferSize;
+
+    /*
+     *  altera preloader variables
+     */
+    static const int _sectorSize = 512;
+    static const int _startSector = 2105344;
+    static const int _numSectors = 8192;
+    char _bootloaderBuf[_numSectors * _sectorSize];
 
 #ifdef Q_OS_WIN
     WinFile _file, _volumeFile;

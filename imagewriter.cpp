@@ -148,7 +148,7 @@ void ImageWriter::setDst(const QString &device, quint64 deviceSize)
 /* Returns true if src and dst are set */
 bool ImageWriter::readyToWrite()
 {
-    return !_src.isEmpty() && !_dst.isEmpty();
+    return !_src.isEmpty() && !_dst.isEmpty() && !_project.isEmpty();
 }
 
 /* Start writing */
