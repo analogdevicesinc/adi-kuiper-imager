@@ -798,85 +798,6 @@ void DownloadThread::setImageCustomization(const QByteArray &config, const QByte
     _firstrun = firstrun;
 }
 
-void DownloadThread::setProjectCustomization(const QByteArray &project)
-{
-    _project = project;
-}
-
-bool DownloadThread::_setupProject(QString folder)
-{
-#ifdef Q_OS_WIN
-    WinFile bootloader;
-#elif defined(Q_OS_LINUX)
-    QByteArray partition = _filename;
-    QFile _volumeFile;
-    QFile bootloader;
-#else
-
-#endif
-    /* Copy project files */
-    QString basepath(folder + "/" + _project);
-    //TODO: remove *Image and .bin when the kuiper image structure changes
-    QDirIterator dirIterator(basepath, {"*.BIN", "*.bin", "*.dtb", "*.rbf", "*.scr", "*Image", "*.img"}, QDir::Files, QDirIterator::Subdirectories);
-
-    while (dirIterator.hasNext()) {
-       QString src(dirIterator.next());
-       QString dst = folder + "/" + dirIterator.fileName();
-
-       QFile::copy(src, dst);
-       qDebug() << dst;
-    }
-
-    /* Setup the kernel image */
-    if (_project.contains("zynq")) {
-        if (_project.contains("zynqmp"))
-            QFile::copy(folder + "/" + "zynqmp-common/Image", folder + "/Image"); //copy kernel image for Zynqmp
-        else if (_project.contains("zynq"))
-            QFile::copy(folder + "/" + "zynq-common/uImage", folder + "/uImage"); //copy kernel image for Zynq
-    } else if (_project.contains("socfpga")) {
-        if (_project.contains("arria10"))
-            QFile::copy(folder + "/" + "socfpga_arria10-common/zImage", folder + "/zImage");
-        //TODO: Add cyclone5 folder
-//        else if (_project.contains("cyclone5"))
-//            QFile::copy(folder + "/" + "socfpga_cyclone5-common/zImage", folder + "/zImage");
-
-    bootloader.setFileName(folder + "/preloader_bootloader.img");
-
-    if (!bootloader.open(QIODevice::ReadWrite)) {
-        qDebug() << "Can't open bootloader file";
-        return false;
-    }
-
-    bootloader.read(_bootloaderBuf, _numSectors * _sectorSize);
-    bootloader.close();
-
-#ifdef Q_OS_LINUX
-        if (isdigit(partition.at(partition.length()-1)))
-            partition += "p3";
-        else
-            partition += "3";
-        _volumeFile.setFileName(partition);
-#endif
-        if (!_volumeFile.open(QIODevice::WriteOnly)) {
-            qDebug() << "Failed to open bootloader partition";
-            return false;
-        }
-#ifdef Q_OS_WIN
-        if(!_volumeFile.lockVolume())
-            return false;
-        if(!_volumeFile.seek(_startSector * _sectorSize))
-            return false;
-#endif
-        if (!_volumeFile.write(_bootloaderBuf, _numSectors * _sectorSize)) {
-            qDebug() << "Failed to write the bootloader to partition";
-            return false;
-        }
-        _volumeFile.close();
-    }
-
-    return true;
-}
-
 bool DownloadThread::_customizeImage()
 {
     QString folder;
@@ -996,6 +917,7 @@ bool DownloadThread::_customizeImage()
     /* Some operating system take longer to complete mounting FAT32
        wait up to 3 seconds for config.txt file to appear */
     QString configFilename;
+    QStringList content;
     bool foundFile = false;
 
     for (int tries = 0; tries < 3; tries++)
@@ -1007,9 +929,9 @@ bool DownloadThread::_customizeImage()
             folder = QString::fromStdString(mp);
             if (!folder.isEmpty() && folder.back() == '\\')
                 folder.chop(1);
-            configFilename = folder+"/config.txt";
+            content = QDir(folder).entryList(QDir::NoDotAndDotDot |QDir::Dirs |QDir::Files);
 
-            if (QFile::exists(configFilename))
+            if (!content.isEmpty())
             {
                 foundFile = true;
                 break;
@@ -1022,95 +944,8 @@ bool DownloadThread::_customizeImage()
 
     if (!foundFile)
     {
-        emit error(tr("Unable to customize. File '%1' does not exist.").arg(configFilename));
+        emit error(tr("Unable to prepare for image customization."));
         return false;
-    }
-
-    emit preparationStatusUpdate(tr("Customizing image"));
-
-    if (!_firstrun.isEmpty())
-    {
-        QFile f(folder+"/firstrun.sh");
-        if (f.open(f.WriteOnly) && f.write(_firstrun) == _firstrun.length())
-        {
-            f.close();
-        }
-        else
-        {
-            emit error(tr("Error creating firstrun.sh on FAT partition"));
-            return false;
-        }
-    }
-
-    if (!_config.isEmpty())
-    {
-        auto configItems = _config.split('\n');
-        configItems.removeAll("");
-        QByteArray config;
-
-        QFile f(configFilename);
-        if (f.open(f.ReadOnly))
-        {
-            config = f.readAll();
-            f.close();
-        }
-
-        for (QByteArray item : configItems)
-        {
-            if (config.contains("#"+item)) {
-                /* Uncomment existing line */
-                config.replace("#"+item, item);
-            } else if (config.contains("\n"+item)) {
-                /* config.txt already contains the line */
-            } else {
-                /* Append new line to config.txt */
-                if (config.right(1) != "\n")
-                    config += "\n"+item+"\n";
-                else
-                    config += item+"\n";
-            }
-        }
-
-        if (f.open(f.WriteOnly) && f.write(config) == config.length())
-        {
-            f.close();
-        }
-        else
-        {
-            emit error(tr("Error writing to config.txt on FAT partition"));
-            return false;
-        }
-    }
-
-    if (!_cmdline.isEmpty())
-    {
-        QByteArray cmdline;
-
-        QFile f(folder+"/cmdline.txt");
-        if (f.exists() && f.open(f.ReadOnly))
-        {
-            cmdline = f.readAll().trimmed();
-            f.close();
-        }
-
-        cmdline += _cmdline;
-        if (f.open(f.WriteOnly) && f.write(cmdline) == cmdline.length())
-        {
-            f.close();
-        }
-        else
-        {
-            emit error(tr("Error writing to cmdline.txt on FAT partition"));
-            return false;
-        }
-    }
-
-    if (!_project.isEmpty())
-    {
-        if (!_setupProject(folder)) {
-            emit error(tr("Error writing project files on FAT partition"));
-            return false;
-        }
     }
 
     emit finalizing();

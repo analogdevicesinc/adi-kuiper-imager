@@ -115,11 +115,6 @@ public:
     void setImageCustomization(const QByteArray &config, const QByteArray &cmdline, const QByteArray &firstrun);
 
     /*
-     * Enable project customization
-     */
-    void setProjectCustomization(const QByteArray &project);
-
-    /*
      * Thread safe download progress query functions
      */
     uint64_t dlNow();
@@ -170,7 +165,7 @@ protected:
     curl_off_t _startOffset;
     std::atomic<std::uint64_t> _lastDlTotal, _lastDlNow, _verifyTotal, _lastVerifyNow, _bytesWritten;
     qint64 _sectorsStart;
-    QByteArray _url, _useragent, _buf, _filename, _lastError, _expectedHash, _config, _cmdline, _firstrun, _project;
+    QByteArray _url, _useragent, _buf, _filename, _lastError, _expectedHash, _config, _cmdline, _firstrun;
     char *_firstBlock;
     size_t _firstBlockSize;
     static QByteArray _proxy;
@@ -179,14 +174,6 @@ protected:
     time_t _lastModified, _serverTime, _lastFailureTime;
     QElapsedTimer _timer;
     int _inputBufferSize;
-
-    /*
-     *  altera preloader variables
-     */
-    static const int _sectorSize = 512;
-    static const int _startSector = 2105344;
-    static const int _numSectors = 8192;
-    char _bootloaderBuf[_numSectors * _sectorSize];
 
 #ifdef Q_OS_WIN
     WinFile _file, _volumeFile;
