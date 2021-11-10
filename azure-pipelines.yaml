@@ -1,0 +1,100 @@
+trigger:
+  - qml
+  - dev/*
+
+jobs:
+  - job: "Ubuntu"
+    pool: { vmImage: "ubuntu-latest" }
+    steps:
+      - checkout: self
+
+      - script: |
+          sudo apt-get -y install --no-install-recommends build-essential devscripts debhelper cmake git libarchive-dev libcurl4-openssl-dev qtbase5-dev qtbase5-dev-tools qtdeclarative5-dev libqt5svg5-dev qttools5-dev qt5-default libssl-dev qml-module-qtquick2 qml-module-qtquick-controls2 qml-module-qtquick-layouts qml-module-qtquick-templates2 qml-module-qtquick-window2 qml-module-qtgraphicaleffects
+        displayName: Install deps
+
+      - script: |
+          debuild -uc -us -ui && cp ../*.deb $(Build.ArtifactStagingDirectory)
+        displayName: Compile imager
+
+      - task: PublishBuildArtifacts@1
+        condition: not(canceled())
+        inputs:
+          pathToPublish: $(Build.ArtifactStagingDirectory)
+          artifactName: ImagerArtifacts
+
+  - job: "Windows"
+    pool: { vmImage: "windows-2022" }
+    variables:
+      MSYS2: /c/msys64
+      MSYS2BASH: C:\msys64\usr\bin\bash.exe
+    steps:
+      - checkout: self
+        path: imager
+
+      - script: |
+          %MSYS2BASH% -lc "pacman --noconfirm -Syyuu"
+          %MSYS2BASH% -lc "pacman --noconfirm -Syyuu"
+        displayName: Update MSYS2
+
+      - script: >-
+          %MSYS2BASH% -lc "pacman --noconfirm -Sy git make mingw-w64-cross-binutils mingw-w64-i686-{toolchain,cmake,make,ninja,qt5-base,qt5-winextras,qt5,qt5-3d,gdb,mesa,qt-creator}"
+        displayName: Install deps
+
+      - script: >-
+          %MSYS2BASH% -lc "
+          mkdir -p build/deploy &&
+          cp %MSYS2%/mingw32/bin/{libbrotlicommon.dll,libbrotlidec.dll,libbrotlienc.dll,libdouble-conversion.dll,libfreetype-6.dll,libglib-2.0-0.dll,libgraphite2.dll,libharfbuzz-0.dll,libicudt69.dll,libicuin69.dll,libicuuc69.dll,libintl-8.dll,liblzma-5.dll,libmd4c.dll,libpcre-1.dll,libpcre2-16-0.dll,libpng16-16.dll,zlib1.dll,libbz2-1.dll,libiconv-2.dll,liblz4.dll,libxml2-2.dll,libzstd.dll,libgcc_s_dw2-1.dll,libstdc++-6.dll,libwinpthread-1.dll} build/deploy"
+        env:
+          CHERE_INVOKING: yes
+        displayName: Setup deploy libs
+
+      - powershell: |
+          (New-Object Net.WebClient).DownloadFile("https://www.openssl.org/source/old/1.0.1/openssl-1.0.1c.tar.gz", "openssl-1.0.1c.tar.gz")
+        workingDirectory: $(Build.SourcesDirectory)
+        displayName: Get OpenSSL
+
+      - task: ExtractFiles@1
+        inputs:
+          archiveFilePatterns: 'openssl-1.0.1c.tar.gz'
+          destinationFolder: $(Build.SourcesDirectory)
+          cleanDestinationFolder: false
+          overwriteExistingFiles: false
+        displayName: Extract OpenSSL
+
+      - script: >-
+          %MSYS2BASH% -lc "
+          export PATH=%MSYS2%/mingw32/bin:%MSYS2%/usr/bin:%MSYS2%/opt/bin:$PATH &&
+          ./Configure --cross-compile-prefix=i686-w64-mingw32- --prefix=$PWD/dist no-idea no-mdc2 no-rc5 shared mingw &&
+          make depend && make && make install_sw &&
+          cp libeay32.dll ../build/deploy/"
+        workingDirectory: $(Build.SourcesDirectory)/openssl-1.0.1c
+        displayName: Compile OpenSSL
+        env:
+          CHERE_INVOKING: yes
+
+      - script: >-
+          %MSYS2BASH% -lc "
+          export PATH=/c/msys64/mingw32/bin:/c/msys64/usr/bin:/c/msys64/opt/bin:$PATH &&
+          cmake -B ./build -S . -GNinja -DCMAKE_BUILD_TYPE:STRING=Release -DQT_QMAKE_EXECUTABLE:STRING=/c/msys64/mingw32/bin/qmake.exe -DCMAKE_PREFIX_PATH:STRING=/c/msys64/mingw32/bin -DCMAKE_C_COMPILER:STRING=/c/msys64/mingw32/bin/gcc.exe -DCMAKE_CXX_COMPILER:STRING=/c/msys64/mingw32/bin/g++.exe -DCMAKE_MAKE_PROGRAM:FILEPATH=/c/msys64/mingw32/bin/ninja.exe . &&
+          cmake --build ./build --target all"
+        displayName: Compile Imager
+        env:
+          CHERE_INVOKING: yes
+
+      - script: |
+          call "C:\Program Files (x86)\NSIS\makensis.exe" build\kuiper-imager.nsi
+        workingDirectory: $(Build.SourcesDirectory)
+        displayName: Create Installer
+
+      - task: CopyFiles@2
+        inputs:
+          Contents: |
+             $(Build.SourcesDirectory)\build\imager*.exe
+             $(Build.SourcesDirectory)\build\deploy\imager*.exe
+          TargetFolder: '$(Build.ArtifactStagingDirectory)'
+          
+      - task: PublishBuildArtifacts@1
+        condition: not(canceled())
+        inputs:
+          targetPath: $(Build.ArtifactStagingDirectory)/*.exe
+          artifactName: ImagerArtifacts
