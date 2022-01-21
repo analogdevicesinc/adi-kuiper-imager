@@ -13,35 +13,26 @@
         {
             "name": "ADI 3D ToF software suite",
             "description": "Nvidia L4T image with the ADDI9036 ToF SDK installed",
-            "icon": "https://static6.arrow.com/aropdfconversion/arrowimages/733c85b04680b48d6b3dc9ea0b1a0cd8ecae5b98/addi9036bcbzrlmainimage.jpg",
-            "subitems": [
-                {
-                    "name": "AD-96TOF1-EBZ",
-                    "description": " ",
-                    "icon": "https://wiki.analog.com/_media/resources/eval/user-guides/ad-96tofebz/board_revc.jpg?w=400&tok=d62103",
-                    "subitems_url": "https://swdownloads.analog.com/cse/aditof/imager/ad-96tof1-ebz.json"
-                },
-                {
-                    "name": "AD-FXTOF1-EBZ",
-                    "description": " ",
-                    "icon": "https://media.digikey.com/Photos/Analog%20Devices%20Photos/MFG_AD-FXTOF1-EBZ.jpg",
-                    "subitems_url": "https://swdownloads.analog.com/cse/aditof/imager/ad-fxtof1-ebz.json"
-                },
-                {
-                    "name": "Chicony ToF",
-                    "description": " ",
-                    "icon": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSgSe-jXKBWsd9QZ6OjOlH2agZo4YOqSO5CbTGS1eis34Yyj4_fM49syYf8I24UznQVLvc&usqp=CAU",
-                    "subitems_url": "https://swdownloads.analog.com/cse/aditof/imager/chicony-tof.json"
-                }
-            ]          
+            "icon": "https://swdownloads.analog.com/cse/aditof/imager/icons/adsd3100.png",
+            "subitems_url": "https://swdownloads.analog.com/cse/kuiper/imager/tof-kuiper.json"
         },
         {
-            "name": "Misc utility images",
-            "description": "Bootloader EEPROM configuration, etc.",
+            "name": "Advanced",
+            "description": "",
             "icon": "icons/cat_misc_utility_images.png",
             "subitems": [
                 {
-                    "name": "Bootloader",
+                    "name": "Update BOOT partition",
+                    "description": "Rewrite the whole partition with the latest release",
+                    "subitems_url": "https://swdownloads.analog.com/cse/boot_partition_files/boot_list.json"
+                },
+                {
+                    "name": "Configure existing content",
+                    "description": "Switch between existing projects located in the BOOT partition",
+                    "subitems_url": "internal://configure_existing"
+                },
+                {
+                    "name": "RPI Bootloader",
                     "description": "Restore the factory default settings and change boot priority",
                     "icon": "https://downloads.raspberrypi.org/raspios_armhf/Raspberry_Pi_OS_(32-bit).png",
                     "subitems_url": "https://downloads.raspberrypi.org/eeprom_recovery.json"

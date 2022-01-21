@@ -42,7 +42,7 @@ DownloadThread::DownloadThread(const QByteArray &url, const QByteArray &localfil
     _curlCount++;
 
     QSettings settings;
-    _ejectEnabled = settings.value("eject", true).toBool();
+    // _ejectEnabled = settings.value("eject", true).toBool();
 }
 
 DownloadThread::~DownloadThread()
@@ -898,7 +898,6 @@ bool DownloadThread::_customizeImage()
 
     if (mountpoints.empty())
     {
-        //
         qDebug() << "drive info. searching for:" << devlower;
         auto l = Drivelist::ListStorageDevices();
         for (auto i : l)
@@ -908,7 +907,6 @@ bool DownloadThread::_customizeImage()
                 qDebug() << "mountpoint:" << QByteArray::fromStdString(mp);
             }
         }
-        //
 
         emit error(tr("Operating system did not mount FAT32 partition"));
         return false;
@@ -951,7 +949,7 @@ bool DownloadThread::_customizeImage()
     emit finalizing();
 
 #ifdef Q_OS_LINUX
-    if (manualmount)
+    if (manualmount && _ejectEnabled)
     {
         if (::access(devlower.constData(), W_OK) != 0)
         {
