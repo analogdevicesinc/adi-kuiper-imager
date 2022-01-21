@@ -170,7 +170,7 @@ protected:
     size_t _firstBlockSize;
     static QByteArray _proxy;
     static int _curlCount;
-    bool _cancelled, _successful, _verifyEnabled, _cacheEnabled, _ejectEnabled;
+    bool _cancelled, _successful, _verifyEnabled, _cacheEnabled, _ejectEnabled = false;
     time_t _lastModified, _serverTime, _lastFailureTime;
     QElapsedTimer _timer;
     int _inputBufferSize;

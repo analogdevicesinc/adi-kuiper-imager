@@ -40,7 +40,7 @@ protected:
     static const int MAX_QUEUE_SIZE;
     std::mutex _queueMutex;
     std::condition_variable _cv;
-    bool _ethreadStarted, _isImage;
+    bool _ethreadStarted, _isImage, _ejectEnabled = false;
     AcceleratedCryptographicHash _inputHash;
     int _activeBuf;
     bool _writeThreadStarted;

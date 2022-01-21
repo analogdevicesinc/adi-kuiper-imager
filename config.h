@@ -8,7 +8,7 @@
 
 
 /* Repository URL */
-#define OSLIST_URL                        "https://raw.githubusercontent.com/analogdevicesinc/adi-kuiper-imager/qml/os_list.json"
+#define OSLIST_URL                        "https://swdownloads.analog.com/cse/kuiper/imager/os_list.json"
 
 /* Time synchronization URL (only used on eglfs QPA platform, URL must be HTTP) */
 #define TIME_URL                          "http://downloads.raspberrypi.org/os_list_imagingutility_v2.json?time_synchronization"

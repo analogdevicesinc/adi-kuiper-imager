@@ -121,7 +121,7 @@ void ImageWriter::setEngine(QQmlApplicationEngine *engine)
 }
 
 /* Set URL to download from */
-void ImageWriter::setSrc(const QUrl &url, quint64 downloadLen, quint64 extrLen, QByteArray expectedHash, bool multifilesinzip, QString parentcategory, QString osname)
+void ImageWriter::setSrc(const QUrl &url, quint64 downloadLen, quint64 extrLen, QByteArray expectedHash, bool multifilesinzip, bool skipformat, QString parentcategory, QString osname)
 {
     _src = url;
     _downloadLen = downloadLen;
@@ -130,6 +130,7 @@ void ImageWriter::setSrc(const QUrl &url, quint64 downloadLen, quint64 extrLen, 
     _multipleFilesInZip = multifilesinzip;
     _parentCategory = parentcategory;
     _osName = osname;
+    _skipFormat = skipformat;
 
     if (!_downloadLen && url.isLocalFile())
     {
@@ -146,9 +147,9 @@ void ImageWriter::setDst(const QString &device, quint64 deviceSize, QStringList 
     _mountpoints = mountpoints;
 }
 
-QString ImageWriter::_getRootPath()
+QString ImageWriter::_getsStorageInfo(QString name, QString type)
 {
-    QString path;
+    QString info;
 
     if (_dst.isEmpty())
         emit error(tr("Please select source first"));
@@ -156,22 +157,43 @@ QString ImageWriter::_getRootPath()
         if (storage.isValid() && storage.isReady() && !storage.isReadOnly()) {
                 QString device(storage.device());
 #ifdef Q_OS_WIN
-            if (_mountpoints.contains(storage.name()), QString::compare(storage.displayName(),"BOOT") == 0) {
+            if (_mountpoints.contains(storage.name()), QString::compare(storage.displayName(),name) == 0) {
 #elif defined(Q_OS_LINUX)
-            if (device.contains(QString(_dst)) && (QString::compare(storage.name(),"BOOT") == 0)) {
+            if (device.contains(QString(_dst)) && (QString::compare(storage.name(),name) == 0)) {
 #endif
-                path = storage.rootPath();
+                if (type == "path")
+                    info = storage.rootPath();
+                else if (type == "device")
+                    info = storage.device();
                 break;
             }
         }
     }
 
-    return path;
+    return info;
 }
 
-QByteArray ImageWriter::getProjectlist(QString projectPath, QString type)
+bool ImageWriter::hasKuiper()
 {
-    QString boot = _getRootPath();
+    QString boot = _getsStorageInfo("BOOT", "path"), info;
+    QFile osinfo;
+
+    if (boot == "")
+        return false;
+
+    osinfo.setFileName(boot + "/kuiper.json");
+    if (!osinfo.open(QFile::ReadOnly | QFile::Text)) {
+        qDebug() << "Can't open os-release file";
+        return false;
+    }
+    return true;
+//    QTextStream content(&osinfo);
+//    return content.readAll().contains("Kuiper");
+}
+
+QByteArray ImageWriter::scanProjectList(QString projectPath, QString type)
+{
+    QString boot = _getsStorageInfo("BOOT", "path");
     QStringList item, subItem;
     QJsonArray projectList;
     QJsonObject menuItem;
@@ -199,7 +221,7 @@ QByteArray ImageWriter::getProjectlist(QString projectPath, QString type)
             item = basepath.entryList(QDir::NoDotAndDotDot | QDir::Dirs);
             foreach (const QDir &dir, item) {
                 subItem = QDir(boot + "/" +dir.dirName()).entryList(QDir::NoDotAndDotDot |QDir::Dirs);
-                if (dir.dirName().contains(projectPath) && !dir.dirName().contains("-common")) {
+                if (dir.dirName().contains(projectPath) && !dir.dirName().contains("common")) {
                     if (subItem.isEmpty()) {
                         binaries = "";
                         for (auto file : QDir(boot + "/" +dir.dirName()).entryList(QDir::Files))
@@ -251,6 +273,236 @@ QByteArray ImageWriter::getProjectlist(QString projectPath, QString type)
     return QJsonDocument(projectList).toJson();
 }
 
+bool ImageWriter::selectProject()
+{
+    QString kernel= _kernel;
+    QString preloader = _preloader;
+    QString files = _filelist;
+#ifdef Q_OS_WIN
+    WinFile bootloader, volumeFile;
+#elif defined(Q_OS_LINUX)
+    QFile bootloader;
+    QFile volumeFile;
+#else
+#endif
+    static char bootloaderBuf[_numSectors * _sectorSize];
+    qint64 _seek_target = _startSector * _sectorSize;
+    QByteArray partition = _dst.toUtf8();
+    QString boot = _getsStorageInfo("BOOT", "path");
+    QStringList binaries = files.split("%",QString::SkipEmptyParts);
+
+    if (preloader != "") {
+        bootloader.setFileName(boot + "/" +preloader);
+        if (!bootloader.open(QIODevice::ReadWrite)) {
+            qDebug() << "Can't open bootloader file";
+            return false;
+        }
+
+        bootloader.read(bootloaderBuf, _numSectors * _sectorSize);
+        bootloader.close();
+
+#ifdef Q_OS_LINUX
+        if (isdigit(partition.at(partition.length()-1)))
+            partition += "p3";
+        else
+            partition += "3";
+#endif
+        volumeFile.setFileName(partition);
+        if (!volumeFile.open(QIODevice::WriteOnly)) {
+            qDebug() << "Failed to open bootloader partition";
+            return false;
+        }
+#ifdef Q_OS_WIN
+        if(!volumeFile.lockVolume())
+            return false;
+        if(!volumeFile.seek(_seek_target))
+            return false;
+#endif
+        if (!volumeFile.write(bootloaderBuf, _numSectors * _sectorSize)) {
+            qDebug() << "Failed to write the bootloader to partition";
+            return false;
+        }
+        volumeFile.close();
+    }
+    if (kernel != "") {
+        if (QFile::exists(boot + "/" + kernel.split("/").takeLast()))
+            QFile::remove(boot + "/" + kernel.split("/").takeLast());
+        QFile::copy(boot + "/" + kernel, boot + "/" + kernel.split("/").takeLast());
+    }
+
+    for (QString f : files.split("%",QString::SkipEmptyParts)) {
+        if(f.contains("overlays")) {
+            QFile config(boot + "/config.txt");
+            config.open(QIODevice::ReadWrite | QIODevice::Text);
+            QString configData (config.readAll());
+            QString selected = f.split("/").takeLast();
+            selected.truncate(-5);
+            if (!configData.contains("\ndtoverlay=" + selected)) {
+                config.seek(config.size());
+                config.write(("\ndtoverlay=rpi-" + selected).toUtf8());
+            }
+            config.close();
+        } else if (f.contains("extlinux")) {
+            if (!QDir(boot + "/extlinux").exists()) {
+                QDir().mkdir(boot + "/extlinux");
+            }
+            if (QFile::exists(boot + "/extlinux/extlinux.conf"))
+                QFile::remove(boot + "/extlinux/extlinux.conf");
+            QFile::copy(boot + "/" + f, boot + "/extlinux/extlinux.conf");
+        } else {
+            if (QFile::exists(boot + "/" + f.split("/").takeLast()))
+                QFile::remove(boot + "/" + f.split("/").takeLast());
+            QFile::copy(boot + "/" + f, boot + "/" + f.split("/").takeLast());
+        }
+    }
+
+    if (!_firstrun.isEmpty())
+    {
+        QFile f(boot+"/firstrun.sh");
+        if (f.open(f.WriteOnly) && f.write(_firstrun) == _firstrun.length())
+        {
+            f.close();
+        }
+        else
+        {
+            emit error(tr("Error creating firstrun.sh on FAT partition"));
+            return false;
+        }
+    }
+
+    if (!_config.isEmpty())
+    {
+        auto configItems = _config.split('\n');
+        configItems.removeAll("");
+        QByteArray config;
+
+        QFile f(boot+"/config.txt");
+        if (f.open(f.ReadWrite))
+        {
+            config = f.readAll();
+            f.close();
+        }
+
+        for (QByteArray item : configItems)
+        {
+            if (config.contains("#"+item)) {
+                /* Uncomment existing line */
+                config.replace("#"+item, item);
+            } else if (config.contains("\n"+item)) {
+                /* config.txt already contains the line */
+            } else {
+                /* Append new line to config.txt */
+                if (config.right(1) != "\n")
+                    config += "\n"+item+"\n";
+                else
+                    config += item+"\n";
+            }
+        }
+
+        if (f.open(f.WriteOnly) && f.write(config) == config.length())
+        {
+            f.close();
+        }
+        else
+        {
+            emit error(tr("Error writing to config.txt on FAT partition"));
+            return false;
+        }
+    }
+
+    if (!_cmdline.isEmpty())
+    {
+        QByteArray cmdline;
+
+        QFile f(boot+"/cmdline.txt");
+        if (f.exists() && f.open(f.ReadOnly))
+        {
+            cmdline = f.readAll().trimmed();
+            f.close();
+        }
+
+        cmdline += _cmdline;
+        if (f.open(f.WriteOnly) && f.write(cmdline) == cmdline.length())
+        {
+            f.close();
+        }
+        else
+        {
+            emit error(tr("Error writing to cmdline.txt on FAT partition"));
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void ImageWriter::setProjectSearch(QString val, int index)
+{
+    _projectConfig[index]=val;
+}
+
+QString ImageWriter::getProjectSearch(int index)
+{
+    return _projectConfig[index];
+}
+
+QByteArray ImageWriter::getPlatformList(QString name)
+{
+    QString path = _getsStorageInfo("BOOT", "path");
+    QJsonObject projectList;
+    QJsonDocument jdoc;
+    QString data;
+    QFile file;
+
+    path+="/kuiper.json";
+    file.setFileName(path);
+    file.open(QIODevice::ReadOnly | QIODevice::Text);
+
+    data = file.readAll();
+    file.close();
+    jdoc = { QJsonDocument::fromJson(data.toUtf8()) };
+
+    projectList = jdoc.object();
+
+    foreach (const QJsonValue &value, projectList["platforms"].toArray()) {
+        QJsonObject local = value.toObject();
+        if (local["name"].toString() == name)
+            return QJsonDocument(local["architectures"].toArray()).toJson();
+    }
+    return 0;
+}
+
+QByteArray ImageWriter::getProjectList()
+{
+    QString path = _getsStorageInfo("BOOT", "path");
+    QJsonObject projectList;
+    QJsonArray filteredProjectList;
+    QJsonDocument jdoc;
+    QString data;
+    QFile file;
+
+    path+="/kuiper.json";
+    file.setFileName(path);
+    file.open(QIODevice::ReadOnly | QIODevice::Text);
+
+    data = file.readAll();
+    file.close();
+    jdoc = { QJsonDocument::fromJson(data.toUtf8()) };
+
+    projectList = jdoc.object();
+
+    foreach (const QJsonValue &value, projectList["projects"].toArray()) {
+        QJsonObject project = value.toObject();
+        if (project["platform"].toString() == _projectConfig[0] &&
+            project["architecture"].toString() == _projectConfig[1] &&
+            project["board"].toString() == _projectConfig[2])
+            filteredProjectList.append(project);
+
+    }
+
+    return QJsonDocument(filteredProjectList).toJson();
+}
+
 bool ImageWriter::setupProject(QString binaries, QString project)
 {
     _binaries = binaries.split(";");
@@ -258,6 +510,24 @@ bool ImageWriter::setupProject(QString binaries, QString project)
     _project = project;
 
     return true;
+}
+
+void ImageWriter::setProjectFiles(QString kernel, QString preloader, QString filelist)
+{
+    _kernel = kernel;
+    _preloader = preloader;
+    _filelist = filelist;
+}
+
+
+void ImageWriter::setProjectListUrl(QString url)
+{
+    _projlist = QUrl(url);
+}
+
+QUrl ImageWriter::getProjectListUrl()
+{
+    return _projlist;
 }
 
 bool ImageWriter::startProjectConfig()
@@ -271,7 +541,7 @@ bool ImageWriter::startProjectConfig()
 #endif
     static char bootloaderBuf[_numSectors * _sectorSize];
     QByteArray partition = _dst.toUtf8();
-    QString boot = _getRootPath();
+    QString boot = _getsStorageInfo("BOOT", "path");
 
     for (auto file : _binaries){
         if (file.contains("preloader_bootloader")) {
@@ -318,9 +588,9 @@ bool ImageWriter::startProjectConfig()
     } else if (_project.contains("zynq")) {
         QFile::copy(boot + "/" + "zynq-common/uImage", boot + "/uImage");
     } else if (_project.contains("socfpga_arria10")) {
-        QFile::copy(boot + "/" + "socfpga_arria10-common/zImage", boot + "/zImage");
+        QFile::copy(boot + "/" + "socfpga_arria10_common/zImage", boot + "/zImage");
     } else if (_project.contains("socfpga_cyclone5")) {
-        QFile::copy(boot + "/" + "socfpga_cyclone5-common/zImage", boot + "/zImage");
+        QFile::copy(boot + "/" + "socfpga_cyclone5_common/zImage", boot + "/zImage");
     } else if (_binaries[0].contains("overlays")) {
         QFile config(boot + "/config.txt");
         config.open(QIODevice::ReadWrite | QIODevice::Text);
@@ -409,12 +679,13 @@ bool ImageWriter::startProjectConfig()
         }
     }
 
+    emit success();
     return true;
 }
 
 /* Returns true if src and dst are set */
 bool ImageWriter::readyToWrite()
-{
+    {
     return !_src.isEmpty() && !_dst.isEmpty();
 }
 
@@ -450,17 +721,17 @@ void ImageWriter::startWrite()
         return;
     }
 
-    if (_extrLen && !_multipleFilesInZip && _extrLen % 512 != 0)
-    {
-        emit error(tr("Input file is not a valid disk image.<br>File size %1 bytes is not a multiple of 512 bytes.").arg(_extrLen));
-        return;
-    }
+   if (_extrLen && !_multipleFilesInZip && _extrLen % 512 != 0)
+   {
+       emit error(tr("Input file is not a valid disk image.<br>File size %1 bytes is not a multiple of 512 bytes.").arg(_extrLen));
+       return;
+   }
 
-    if (!_expectedHash.isEmpty() && _cachedFileHash == _expectedHash)
-    {
-        // Use cached file
-        urlstr = QUrl::fromLocalFile(_cacheFileName).toString(_src.FullyEncoded).toLatin1();
-    }
+   if (!_expectedHash.isEmpty() && _cachedFileHash == _expectedHash)
+   {
+       // Use cached file
+       urlstr = QUrl::fromLocalFile(_cacheFileName).toString(_src.FullyEncoded).toLatin1();
+   }
 
     if (QUrl(urlstr).isLocalFile())
     {
@@ -528,10 +799,14 @@ void ImageWriter::startWrite()
     if (_multipleFilesInZip)
     {
         static_cast<DownloadExtractThread *>(_thread)->enableMultipleFileExtraction();
-        DriveFormatThread *dft = new DriveFormatThread(_dst.toLatin1(), this);
-        connect(dft, SIGNAL(success()), _thread, SLOT(start()));
-        connect(dft, SIGNAL(error(QString)), SLOT(onError(QString)));
-        dft->start();
+        if (!_skipFormat) {
+            DriveFormatThread *dft = new DriveFormatThread(_dst.toLatin1(), this);
+            connect(dft, SIGNAL(success()), _thread, SLOT(start()));
+            connect(dft, SIGNAL(error(QString)), SLOT(onError(QString)));
+            dft->start();
+        } else {
+            _thread->start();
+        }
     }
     else
     {
