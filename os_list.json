@@ -8,7 +8,7 @@
             "name": "ADI Kuiper Linux",
             "description": "ADI flavoured Linux operating system based on RPI OS",
             "icon": "icons/os_kuiper.png",
-            "subitems_url": "https://swdownloads.analog.com/cse/kuiper/kuiper_list.json"
+            "subitems_url": "https://swdownloads.analog.com/cse/kuiper/imager/kuiper_os_list.json"
         },
         {
             "name": "ADI 3D ToF software suite",
@@ -25,11 +25,6 @@
                     "name": "Update BOOT partition",
                     "description": "Rewrite the whole partition with the latest release",
                     "subitems_url": "https://swdownloads.analog.com/cse/boot_partition_files/boot_list.json"
-                },
-                {
-                    "name": "Configure existing content",
-                    "description": "Switch between existing projects located in the BOOT partition",
-                    "subitems_url": "internal://configure_existing"
                 },
                 {
                     "name": "RPI Bootloader",

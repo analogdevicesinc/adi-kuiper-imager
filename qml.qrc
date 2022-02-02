@@ -36,6 +36,7 @@
         <file>icons/intel.png</file>
         <file>icons/xilinx.png</file>
         <file>icons/adi.png</file>
-	<file>icons/os_kuiper.png</file>
+        <file>icons/os_kuiper.png</file>
+        <file>icons/select.png</file>
     </qresource>
 </RCC>

@@ -115,10 +115,13 @@ public:
     Q_INVOKABLE QByteArray getPlatformList( QString type);
     Q_INVOKABLE QByteArray getProjectList();
     Q_INVOKABLE void setProjectSearch(QString val, int index);
+    Q_INVOKABLE QString getProjectSearch(int index);
     Q_INVOKABLE bool setupProject(QString binaries, QString project);
     Q_INVOKABLE bool selectProject();
     Q_INVOKABLE void setProjectFiles(QString kernel, QString preloader, QString filelist);
     Q_INVOKABLE bool startProjectConfig();
+    Q_INVOKABLE void setProjectListUrl(QString url);
+    Q_INVOKABLE QUrl getProjectListUrl();
     Q_INVOKABLE QString crypt(const QByteArray &password);
 
 signals:
@@ -151,7 +154,7 @@ protected slots:
     void onPreparationStatusUpdate(QString msg);
 
 protected:
-    QUrl _src, _repo, _proj;
+    QUrl _src, _repo, _proj, _projlist;
     QString _dst, _cacheFileName, _parentCategory, _osName;
     QString _projectConfig[3];
     QString _kernel, _preloader, _filelist;
@@ -173,7 +176,7 @@ protected:
      *  altera preloader variables
      */
     static const int _sectorSize = 512;
-    static const int _startSector = 2105344;
+    static const int _startSector = 4202496;
     static const int _numSectors = 8192;
 
     void _parseCompressedFile();

@@ -129,7 +129,7 @@ ApplicationWindow {
                     ToolTip.delay: 300
                     ToolTip.timeout: 5000
                     ToolTip.visible: hovered
-                    ToolTip.text: qsTr("This tool tip is shown after hovering the button for a second.")
+                    ToolTip.text: qsTr("Select the destination storage that should be written or modified")
 
                     onClicked: {
                         storagePopup.open()
@@ -157,6 +157,11 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     highlighted: false
                     Material.background: osbutton.highlighted ? Material.Pink : "#2ecc71"
+
+                    ToolTip.delay: 300
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Select the desired content that should be written on the storage above")
 
                     onClicked: {
                         ospopup.open()
@@ -187,7 +192,12 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     highlighted: btnTarget.text == qsTr("Target (unconfigured)") ? true : false
                     Material.background: btnTarget.highlighted ? Material.Pink : "#2ecc71"
-                    visible: osbutton.text == qsTr("CONFIGURE EXISTING CONTENT") ? true : false
+                    visible: false
+
+                    ToolTip.delay: 300
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Select the project that will be booted on the SD card")
 
                     onClicked: {
                         projectpopup.open()
@@ -214,28 +224,30 @@ ApplicationWindow {
                 Layout.preferredWidth: -1
                 Layout.alignment: Qt.AlignRight | Qt.AlignBottom
                 hoverEnabled: true
+
                 ToolTip.delay: 300
                 ToolTip.timeout: 5000
                 ToolTip.visible: hovered
-                ToolTip.text: qsTr("This tool tip is shown after hovering the button for a second.")
+                ToolTip.text: qsTr("Start writing or configuring the SD card content")
 
                 onClicked: {
                     if (osbutton.text != qsTr("CONFIGURE EXISTING CONTENT")) {
-                          if (!imageWriter.readyToWrite()) {
-                              return
-                          }
-                          confirmwritepopup.askForConfirmation()
-                      } else {
-                          progressText.visible = true
-                          progressText.text = qsTr("Writing project on the BOOT partition")
-                          msgpopup.title = qsTr("Image configuration")
-                          if(imageWriter.selectProject())
-                              msgpopup.text = "Configuration complete!"
-                          else
-                              msgpopup.text = "Configuration failed!"
-                          msgpopup.openPopup()
-                          resetWriteButton()
-                      }
+                        if (!imageWriter.readyToWrite()) {
+                            return
+                        }
+                        confirmwritepopup.askForConfirmation()
+                    } else {
+                        progressText.visible = true
+                        progressText.text = qsTr("Writing project on the BOOT partition")
+                        msgpopup.title = qsTr("Image configuration")
+                        if(imageWriter.selectProject())
+                            msgpopup.text = "Configuration complete!"
+                        else
+                            msgpopup.text = "Configuration failed!"
+                        msgpopup.openPopup()
+                        resetWriteButton()
+                    }
+                    btnTarget.enabled = false
                 }
                 Accessible.onPressAction: clicked()
             }
@@ -571,6 +583,10 @@ ApplicationWindow {
         padding: 0
         property string categorySelected : ""
         onClosed: {
+            if (osbutton.text == qsTr("")) {
+                osbutton.text = qsTr("Image Source (unconfigured)")
+                btnTarget.visible = false
+            }
             osswipeview.currentIndex = 0
         }
 
@@ -682,6 +698,13 @@ ApplicationWindow {
             id: osmodel
 
             ListElement {
+                name: qsTr("Configure existing content")
+                icon: "icons/select.png"
+                subitems_url : "internal://configure_existing"
+                description: qsTr("Switch between existing projects located in the BOOT partition")
+            }
+
+            ListElement {
                 url: ""
                 icon: "icons/use_custom.png"
                 name: qsTr("Use custom")
@@ -698,17 +721,12 @@ ApplicationWindow {
                 skip_format: false
                 release_date: ""
                 subitems_url: ""
+                project_list: ""
                 subitems: []
                 multiple_files: "no"
                 name: qsTr("Erase")
                 description: qsTr("Format card as FAT32")
                 tooltip: ""
-            }
-
-            ListElement {
-                name: qsTr("Configure existing content")
-                subitems_url    : "internal://configure_existing"
-                description: qsTr("Switch between existing projects located in the BOOT partition")
             }
 
             Component.onCompleted: {
@@ -867,6 +885,7 @@ ApplicationWindow {
                         contains_multiple_files: false
                         skip_format: false
                         release_date: ""
+                        project_list: ""
                         subitems_url: "internal://back"
                         subitems: []
                         name: qsTr("Back")
@@ -909,6 +928,15 @@ ApplicationWindow {
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
         property string categorySelected : ""
         
+        onClosed: {
+            projswipeview.removeItem(projswipeview.itemAt(5))
+            projswipeview.removeItem(projswipeview.itemAt(4))
+            projswipeview.removeItem(projswipeview.itemAt(3))
+            projswipeview.removeItem(projswipeview.itemAt(2))
+            projswipeview.removeItem(projswipeview.itemAt(1))
+            projswipeview.setCurrentIndex(0);
+        }
+
         DropShadow {
             width: projectpopup.width
             height: projectpopup.height
@@ -1223,7 +1251,7 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 Layout.leftMargin: 25
                 Layout.topMargin: 25
-                text: qsTr("Storage: <b>%1</b> already conains a version of Kuiper.<br> Do you want to configure the current content?.").arg(btnStorage.text)
+                text: qsTr("Storage: <b>%1</b> conains a Kuiper project list.<br> Do you want to configure the current content?.").arg(btnStorage.text)
                 Accessible.name: text.replace(/<\/?[^>]+(>|$)/g, "")
             }
 
@@ -1249,7 +1277,11 @@ ApplicationWindow {
                     onClicked: {
                         writeActionPopup.close()
                         osbutton.text = qsTr("CONFIGURE EXISTING CONTENT");
+                        imageWriter.setProjectListUrl("")
                         osbutton.highlighted = false;
+                        btnTarget.highlighted = true;
+                        btnTarget.visible = true;
+                        btnTarget.enabled = true;
                         ospopup.close();
 
                     }
@@ -1418,6 +1450,7 @@ ApplicationWindow {
         osbutton.text = qsTr("Image Source (unconfigured)")
         btnTarget.highlighted = true
         btnTarget.text = "TARGET (UNCONFIGURED)"
+        btnTarget.visible = false
         osbutton.enabled = false
         progressBar.visible = false
         btnStorage.enabled = true
@@ -1448,7 +1481,6 @@ ApplicationWindow {
         } else {
             msgpopup.text = qsTr("<b>%1</b> has been written to <b>%2</b>").arg(osbutton.text).arg(btnStorage.text)
             if (osbutton.text.toLowerCase().includes("kuiper")) {
-                writeActionPopup.open()
                 progressText.visible = false
                 progressText.text = qsTr("")
                 writebutton.enabled = imageWriter.readyToWrite()
@@ -1467,12 +1499,13 @@ ApplicationWindow {
             msgpopup.quitButton = true
         }
         writebutton.visible = true
+        btnTarget.enabled = true
         msgpopup.openPopup()
     }
 
     function onFileSelected(file) {
         imageWriter.setSrc(file)
-        osbutton.text += imageWriter.srcFileName()
+        osbutton.text = imageWriter.srcFileName()
         ospopup.close()
         if (imageWriter.readyToWrite()) {
             osbutton.highlighted = false
@@ -1517,7 +1550,7 @@ ApplicationWindow {
             }
 
             for (var i in oslist) {
-                osmodel.insert(osmodel.count-2, oslist[i])
+                osmodel.insert(osmodel.count-3, oslist[i])
             }
 
             if ("imager" in o) {
@@ -1550,6 +1583,8 @@ ApplicationWindow {
     }
 
     function selectOSitem(d, selectFirstSubitem) {
+        var url = d.project_list
+        btnTarget.visible = false
         if (typeof(d.subitems) == "object" && d.subitems.count) {
             var m = newSublist()
 
@@ -1572,8 +1607,10 @@ ApplicationWindow {
             {
                 osbutton.text = qsTr("CONFIGURE EXISTING CONTENT")
                 osbutton.highlighted = false
-                btnTarget.text = "TARGET (UNCONFIGURED)"
+                btnTarget.text = qsTr("TARGET (UNCONFIGURED)")
                 btnTarget.highlighted = true
+                btnTarget.visible = true
+                btnTarget.enabled = true
                 ospopup.close()
             }
             else
@@ -1620,13 +1657,18 @@ ApplicationWindow {
             imageWriter.setSrc(d.url, d.image_download_size, d.extract_size, typeof(d.extract_sha256) != "undefined" ? d.extract_sha256 : "", typeof(d.contains_multiple_files) != "undefined" ? d.contains_multiple_files : false, typeof(d.skip_format) != "undefined" ? d.skip_format : false, ospopup.categorySelected, d.name)
             osbutton.text += d.name
             ospopup.close()
+            if (typeof(d.project_list) != "undefined") {
+                imageWriter.setProjectListUrl(d.project_list)
+                btnTarget.text = qsTr("TARGET (UNCONFIGURED)")
+                btnTarget.highlighted = true
+                if (d.url != qsTr("internal://format"))
+                    btnTarget.visible = true
+            }
             if (imageWriter.readyToWrite()) {
                 osbutton.highlighted = false
             }
             if (osbutton.text != qsTr("CONFIGURE EXISTING CONTENT"))
                 writebutton.enabled = true
-                btnTarget.text = "TARGET (UNCONFIGURED)"
-                btnTarget.highlighted = true
         }
     }
 
@@ -1640,6 +1682,7 @@ ApplicationWindow {
         imageWriter.setDst(d.device, d.size, d.mountpoints)
         osbutton.text = qsTr("Image Source (unconfigured)")
         btnTarget.text = qsTr("TARGET (UNCONFIGURED)")
+        btnTarget.visible = false
         btnStorage.text = d.description
 
         osbutton.enabled = true;
@@ -1647,22 +1690,49 @@ ApplicationWindow {
             writeActionPopup.open()
     }
 
-    
     function selectProj(item) {
 
         switch (item.type) {
         
             case "platforms":
-                var archlist = JSON.parse(imageWriter.getPlatformList(item.name))
-                var newlist = subprojlist.createObject(projswipeview)
-                projswipeview.addItem(newlist)
-                var sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
-                for (var i in archlist){
-                    archlist[i].type = "architectures"
-                    sublist.append(archlist[i])
+                var archlist
+                var listurl = imageWriter.getProjectListUrl()
+                if (listurl != "") {
+                    httpRequest(listurl, function (x) {
+                        var list = JSON.parse(x.responseText)
+                        var platformlist = list.platforms
+                        for (var i in platformlist) {
+                            if (platformlist[i].name == item.name){
+                                archlist = platformlist[i]["architectures"]
+                            }
+                        }
+                        var newlist = subprojlist.createObject(projswipeview)
+                        projswipeview.addItem(newlist)
+                        var sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
+                        for (var i in archlist){
+                            archlist[i].type = "architectures"
+                            sublist.append(archlist[i])
+                        }
+                        imageWriter.setProjectSearch(item.name,0)
+                        projswipeview.incrementCurrentIndex()
+                    })
+                } else if (imageWriter.hasKuiper()) {
+                    archlist = JSON.parse(imageWriter.getPlatformList(item.name))
+                    var newlist = subprojlist.createObject(projswipeview)
+                    projswipeview.addItem(newlist)
+                    var sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
+                    for (var i in archlist){
+                        archlist[i].type = "architectures"
+                        sublist.append(archlist[i])
+                    }
+                    imageWriter.setProjectSearch(item.name,0)
+                    projswipeview.incrementCurrentIndex()
+                } else {
+                    onError("fail")
                 }
-                imageWriter.setProjectSearch(item.name,0)
-                projswipeview.incrementCurrentIndex()
+
+                btnTarget.text = item.name + ": "
+
                 break;
             case "architectures":
                 var newlist = subprojlist.createObject(projswipeview)
@@ -1673,7 +1743,7 @@ ApplicationWindow {
                     sublist.append(it)
                 }
                 imageWriter.setProjectSearch(item.name,1)
-
+                btnTarget.text += item.name + ": "
                 projswipeview.incrementCurrentIndex()
                 break;
 
@@ -1685,9 +1755,14 @@ ApplicationWindow {
                         filelist+='%'
                 }
                 writebutton.enabled = true
-                btnTarget.text = item.name
+                btnTarget.text += item.name
                 btnTarget.highlighted  = false
                 imageWriter.setProjectFiles(item.kernel, item.preloader, filelist)
+                projswipeview.removeItem(projswipeview.itemAt(5))
+                projswipeview.removeItem(projswipeview.itemAt(4))
+                projswipeview.removeItem(projswipeview.itemAt(3))
+                projswipeview.removeItem(projswipeview.itemAt(2))
+                projswipeview.removeItem(projswipeview.itemAt(1))
                 projectpopup.close()
                 break
 
@@ -1703,12 +1778,36 @@ ApplicationWindow {
                 projswipeview.addItem(newlist)
                 var sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
                 imageWriter.setProjectSearch(item.name,2)
-                var projlist = JSON.parse(imageWriter.getProjectList())
-                for (var i in projlist) {
-                    projlist[i].type = "project";
-                    sublist.append(projlist[i])
 
+                var listurl = imageWriter.getProjectListUrl()
+                if (listurl != "") {
+                    httpRequest(listurl, function (x) {
+                        var list = JSON.parse(x.responseText)
+                        var projlist = list.projects
+                        for (var i in projlist) {
+                            if (projlist[i].platform == imageWriter.getProjectSearch(0) &&
+                                projlist[i].architecture == imageWriter.getProjectSearch(1) &&
+                                projlist[i].board == imageWriter.getProjectSearch(2)){
+                                projlist[i].type = "project";
+                                sublist.append(projlist[i])
+                            }
+                        }
+
+                    })
+
+                } else if (imageWriter.hasKuiper()) {
+                    var projlist = JSON.parse(imageWriter.getProjectList())
+                    for (var i in projlist) {
+                        projlist[i].type = "project";
+                        sublist.append(projlist[i])
+
+                    }
+                } else {
+                        onError("FAIL")
                 }
+
+
+                btnTarget.text += item.name + ": "
 
                 projswipeview.incrementCurrentIndex()
                 break;

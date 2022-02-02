@@ -178,6 +178,9 @@ bool ImageWriter::hasKuiper()
     QString boot = _getsStorageInfo("BOOT", "path"), info;
     QFile osinfo;
 
+    if (boot == "")
+        return false;
+
     osinfo.setFileName(boot + "/kuiper.json");
     if (!osinfo.open(QFile::ReadOnly | QFile::Text)) {
         qDebug() << "Can't open os-release file";
@@ -320,11 +323,37 @@ bool ImageWriter::selectProject()
         }
         volumeFile.close();
     }
-    if (kernel != "")
-        QFile::copy(boot + "/" +kernel, boot + "/" + kernel.split("/").takeLast());
+    if (kernel != "") {
+        if (QFile::exists(boot + "/" + kernel.split("/").takeLast()))
+            QFile::remove(boot + "/" + kernel.split("/").takeLast());
+        QFile::copy(boot + "/" + kernel, boot + "/" + kernel.split("/").takeLast());
+    }
 
-    for (QString f : files.split("%",QString::SkipEmptyParts))
-        QFile::copy(boot + "/" +f, boot + "/" + f.split("/").takeLast());
+    for (QString f : files.split("%",QString::SkipEmptyParts)) {
+        if(f.contains("overlays")) {
+            QFile config(boot + "/config.txt");
+            config.open(QIODevice::ReadWrite | QIODevice::Text);
+            QString configData (config.readAll());
+            QString selected = f.split("/").takeLast();
+            selected.truncate(-5);
+            if (!configData.contains("\ndtoverlay=" + selected)) {
+                config.seek(config.size());
+                config.write(("\ndtoverlay=rpi-" + selected).toUtf8());
+            }
+            config.close();
+        } else if (f.contains("extlinux")) {
+            if (!QDir(boot + "/extlinux").exists()) {
+                QDir().mkdir(boot + "/extlinux");
+            }
+            if (QFile::exists(boot + "/extlinux/extlinux.conf"))
+                QFile::remove(boot + "/extlinux/extlinux.conf");
+            QFile::copy(boot + "/" + f, boot + "/extlinux/extlinux.conf");
+        } else {
+            if (QFile::exists(boot + "/" + f.split("/").takeLast()))
+                QFile::remove(boot + "/" + f.split("/").takeLast());
+            QFile::copy(boot + "/" + f, boot + "/" + f.split("/").takeLast());
+        }
+    }
 
     if (!_firstrun.isEmpty())
     {
@@ -411,6 +440,11 @@ void ImageWriter::setProjectSearch(QString val, int index)
     _projectConfig[index]=val;
 }
 
+QString ImageWriter::getProjectSearch(int index)
+{
+    return _projectConfig[index];
+}
+
 QByteArray ImageWriter::getPlatformList(QString name)
 {
     QString path = _getsStorageInfo("BOOT", "path");
@@ -456,7 +490,7 @@ QByteArray ImageWriter::getProjectList()
 
     projectList = jdoc.object();
 
-    foreach (const QJsonValue &value, projectList["project"].toArray()) {
+    foreach (const QJsonValue &value, projectList["projects"].toArray()) {
         QJsonObject project = value.toObject();
         if (project["platform"].toString() == _projectConfig[0] &&
             project["architecture"].toString() == _projectConfig[1] &&
@@ -482,6 +516,17 @@ void ImageWriter::setProjectFiles(QString kernel, QString preloader, QString fil
     _kernel = kernel;
     _preloader = preloader;
     _filelist = filelist;
+}
+
+
+void ImageWriter::setProjectListUrl(QString url)
+{
+    _projlist = QUrl(url);
+}
+
+QUrl ImageWriter::getProjectListUrl()
+{
+    return _projlist;
 }
 
 bool ImageWriter::startProjectConfig()
