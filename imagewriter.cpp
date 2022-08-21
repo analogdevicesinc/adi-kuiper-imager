@@ -49,7 +49,7 @@
 #endif
 
 ImageWriter::ImageWriter(QObject *parent)
-    : QObject(parent), _repo(QUrl(QString(OSLIST_URL))), _proj(QUrl(QString(PROJLIST_URL))), _dlnow(0), _verifynow(0),
+    : QObject(parent), _repo(QUrl(QString(OSLIST_URL))), _dlnow(0), _verifynow(0),
       _engine(nullptr), _thread(nullptr), _verifyEnabled(false), _cachingEnabled(false),
       _embeddedMode(false), _online(false)
 {
@@ -139,10 +139,277 @@ void ImageWriter::setSrc(const QUrl &url, quint64 downloadLen, quint64 extrLen, 
 }
 
 /* Set device to write to */
-void ImageWriter::setDst(const QString &device, quint64 deviceSize)
+void ImageWriter::setDst(const QString &device, quint64 deviceSize, QStringList mountpoints)
 {
     _dst = device;
     _devLen = deviceSize;
+    _mountpoints = mountpoints;
+}
+
+QString ImageWriter::_getRootPath()
+{
+    QString path;
+
+    if (_dst.isEmpty())
+        emit error(tr("Please select source first"));
+    foreach (const QStorageInfo &storage, QStorageInfo::mountedVolumes()) {
+        if (storage.isValid() && storage.isReady() && !storage.isReadOnly()) {
+                QString device(storage.device());
+#ifdef Q_OS_WIN
+            if (_mountpoints.contains(storage.name()), QString::compare(storage.displayName(),"BOOT") == 0) {
+#elif defined(Q_OS_LINUX)
+            if (device.contains(QString(_dst)) && (QString::compare(storage.name(),"BOOT") == 0)) {
+#endif
+                path = storage.rootPath();
+                break;
+            }
+        }
+    }
+
+    return path;
+}
+
+QByteArray ImageWriter::getProjectlist(QString projectPath, QString type)
+{
+    QString boot = _getRootPath();
+    QStringList item, subItem;
+    QJsonArray projectList;
+    QJsonObject menuItem;
+    QString binaries;
+    QDir basepath;
+
+    if (type == "category") {
+        if (projectPath == "overlays") {
+            basepath = QDir(boot + "/overlays");
+            item = basepath.entryList(QDir::NoDotAndDotDot | QDir::Files);
+            for (auto dtb : item) {
+                if (dtb.contains("rpi-")) {
+                    menuItem = QJsonObject{
+                        {"icon", "icons/rpi.png"},
+                        {"path", boot + "/overlays/"},
+                        {"binaries", boot + "/overlays/" + dtb},
+                        {"name", dtb.replace("rpi-", "").replace(".dtbo", "")},
+                        {"type", "project"},
+                    };
+                    projectList.append(menuItem);
+                }
+            }
+        } else {
+            basepath = QDir(boot);
+            item = basepath.entryList(QDir::NoDotAndDotDot | QDir::Dirs);
+            foreach (const QDir &dir, item) {
+                subItem = QDir(boot + "/" +dir.dirName()).entryList(QDir::NoDotAndDotDot |QDir::Dirs);
+                if (dir.dirName().contains(projectPath) && !dir.dirName().contains("-common")) {
+                    if (subItem.isEmpty()) {
+                        binaries = "";
+                        for (auto file : QDir(boot + "/" +dir.dirName()).entryList(QDir::Files))
+                            binaries += (boot + "/" + dir.dirName() + "/" + file + ";");
+                        menuItem = QJsonObject{
+                            {"icon", "icons/adi.png"},
+                            {"name", dir.dirName()},
+                            {"path", boot + "/" + dir.dirName()},
+                            {"binaries", binaries},
+                            {"type", "project"},
+                        };
+                        projectList.append(menuItem);
+                    } else {
+                        menuItem = QJsonObject{
+                            {"icon", "icons/ic_chevron_right_40px.svg"},
+                            {"name", dir.dirName()},
+                            {"path", boot + "/" + dir.dirName()},
+                            {"type", "subcategory"}
+                        };
+                        projectList.append(menuItem);
+                    }
+                }
+            }
+        }
+    } else if (type == "subcategory") {
+        basepath = QDir(projectPath);
+        item = basepath.entryList(QDir::NoDotAndDotDot | QDir::Dirs);
+        foreach (const QDir &dir, item) {
+            binaries = "";
+            QStringList files = QDir(projectPath + "/" +dir.dirName()).entryList(QDir::Files);
+            for (auto file : files)
+                binaries += (projectPath + "/" +dir.dirName() + "/" + file + ";");
+            files = QDir(projectPath).entryList(QDir::Files);
+            for (auto file : files)
+                binaries += (projectPath + "/" + file + ";");
+            menuItem = QJsonObject {
+                {"icon", "icons/adi.png"},
+                {"name", dir.dirName()},
+                {"path", projectPath + "/" + dir.dirName()},
+                {"multiple_projects", true},
+                {"binaries", binaries},
+                {"type", "project"},
+            };
+
+            projectList.append(menuItem);
+        }
+    }
+
+    return QJsonDocument(projectList).toJson();
+}
+
+bool ImageWriter::setupProject(QString binaries, QString project)
+{
+    _binaries = binaries.split(";");
+    _binaries.removeAll("");
+    _project = project;
+
+    return true;
+}
+
+bool ImageWriter::startProjectConfig()
+{
+#ifdef Q_OS_WIN
+    WinFile bootloader, volumeFile;
+#elif defined(Q_OS_LINUX)
+    QFile bootloader;
+    QFile volumeFile;
+#else
+#endif
+    static char bootloaderBuf[_numSectors * _sectorSize];
+    QByteArray partition = _dst.toUtf8();
+    QString boot = _getRootPath();
+
+    for (auto file : _binaries){
+        if (file.contains("preloader_bootloader")) {
+            bootloader.setFileName(file);
+            if (!bootloader.open(QIODevice::ReadWrite)) {
+                qDebug() << "Can't open bootloader file";
+                return false;
+            }
+
+            bootloader.read(bootloaderBuf, _numSectors * _sectorSize);
+            bootloader.close();
+
+#ifdef Q_OS_LINUX
+            if (isdigit(partition.at(partition.length()-1)))
+                partition += "p3";
+            else
+                partition += "3";
+#endif
+            volumeFile.setFileName(partition);
+            if (!volumeFile.open(QIODevice::WriteOnly)) {
+                qDebug() << "Failed to open bootloader partition";
+                return false;
+            }
+#ifdef Q_OS_WIN
+            if(!volumeFile.lockVolume())
+                return false;
+            if(!volumeFile.seek(_startSector * _sectorSize))
+                return false;
+#endif
+            if (!volumeFile.write(bootloaderBuf, _numSectors * _sectorSize)) {
+                qDebug() << "Failed to write the bootloader to partition";
+                return false;
+            }
+            volumeFile.close();
+
+        } else {
+            QFile::copy(file, boot + "/" + file.split("/").takeLast());
+        }
+    }
+
+    /* Setup the kernel image */
+    if (_project.contains("zynqmp")) {
+        QFile::copy(boot + "/" + "zynqmp-common/Image", boot + "/Image");
+    } else if (_project.contains("zynq")) {
+        QFile::copy(boot + "/" + "zynq-common/uImage", boot + "/uImage");
+    } else if (_project.contains("socfpga_arria10")) {
+        QFile::copy(boot + "/" + "socfpga_arria10-common/zImage", boot + "/zImage");
+    } else if (_project.contains("socfpga_cyclone5")) {
+        QFile::copy(boot + "/" + "socfpga_cyclone5-common/zImage", boot + "/zImage");
+    } else if (_binaries[0].contains("overlays")) {
+        QFile config(boot + "/config.txt");
+        config.open(QIODevice::ReadWrite | QIODevice::Text);
+        QString configData (config.readAll());
+        if (!configData.contains("\ndtoverlay=rpi-" + _project)) {
+            config.seek(config.size());
+            config.write(("\ndtoverlay=rpi-" + _project).toUtf8());
+        }
+        config.close();
+    }
+
+    if (!_firstrun.isEmpty())
+    {
+        QFile f(boot+"/firstrun.sh");
+        if (f.open(f.WriteOnly) && f.write(_firstrun) == _firstrun.length())
+        {
+            f.close();
+        }
+        else
+        {
+            emit error(tr("Error creating firstrun.sh on FAT partition"));
+            return false;
+        }
+    }
+
+    if (!_config.isEmpty())
+    {
+        auto configItems = _config.split('\n');
+        configItems.removeAll("");
+        QByteArray config;
+
+        QFile f(boot+"/config.txt");
+        if (f.open(f.ReadWrite))
+        {
+            config = f.readAll();
+            f.close();
+        }
+
+        for (QByteArray item : configItems)
+        {
+            if (config.contains("#"+item)) {
+                /* Uncomment existing line */
+                config.replace("#"+item, item);
+            } else if (config.contains("\n"+item)) {
+                /* config.txt already contains the line */
+            } else {
+                /* Append new line to config.txt */
+                if (config.right(1) != "\n")
+                    config += "\n"+item+"\n";
+                else
+                    config += item+"\n";
+            }
+        }
+
+        if (f.open(f.WriteOnly) && f.write(config) == config.length())
+        {
+            f.close();
+        }
+        else
+        {
+            emit error(tr("Error writing to config.txt on FAT partition"));
+            return false;
+        }
+    }
+
+    if (!_cmdline.isEmpty())
+    {
+        QByteArray cmdline;
+
+        QFile f(boot+"/cmdline.txt");
+        if (f.exists() && f.open(f.ReadOnly))
+        {
+            cmdline = f.readAll().trimmed();
+            f.close();
+        }
+
+        cmdline += _cmdline;
+        if (f.open(f.WriteOnly) && f.write(cmdline) == cmdline.length())
+        {
+            f.close();
+        }
+        else
+        {
+            emit error(tr("Error writing to cmdline.txt on FAT partition"));
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /* Returns true if src and dst are set */
@@ -222,7 +489,6 @@ void ImageWriter::startWrite()
     _thread->setVerifyEnabled(_verifyEnabled);
     _thread->setUserAgent(QString("Mozilla/5.0 rpi-imager/%1").arg(constantVersion()).toUtf8());
     _thread->setImageCustomization(_config, _cmdline, _firstrun);
-    _thread->setProjectCustomization(_project);
 
     if (!_expectedHash.isEmpty() && _cachedFileHash != _expectedHash && _cachingEnabled)
     {
@@ -916,13 +1182,6 @@ void ImageWriter::setImageCustomization(const QByteArray &config, const QByteArr
     qDebug() << "Custom config.txt entries:" << config;
     qDebug() << "Custom cmdline.txt entries:" << cmdline;
     qDebug() << "Custom firstuse.sh:" << firstrun;
-}
-
-void ImageWriter::setProjectCustomization(const QByteArray &project)
-{
-    _project = project;
-
-    qDebug() << "Custom project:" << project;
 }
 
 QString ImageWriter::crypt(const QByteArray &password)

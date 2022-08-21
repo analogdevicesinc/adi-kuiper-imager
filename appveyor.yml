@@ -1,0 +1,66 @@
+version: 1.0.{build}
+
+image:
+    - Ubuntu2004
+    - Visual Studio 2019
+
+configuration: Release
+
+branches:
+    only:
+        - qml
+
+clone_depth: 1
+
+for:
+    -
+      matrix:
+        only:
+          - image: Visual Studio 2019    
+
+      clone_folder: C:/adi-kuiper-imager
+
+      install:      
+        - ps: |
+            if (Test-Path "C:/Program Files (x86)/NSIS/makensis.exe") {
+                echo "using nsis from cache"
+            } else {
+                choco install -y nsis.install
+            }
+        - set "PATH=%PATH%;C:\Program Files (x86)\NSIS"
+      before_build:
+        - cmd: C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syuu"
+        - cmd: C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syuu"
+        - cmd: C:\msys64\usr\bin\bash -lc "pacman --needed --noconfirm -Sy git msys2-devel mingw-w64-i686-{toolchain,cmake,ninja,qt5-winextras,qt5,qt5-3d,gdb,mesa,qt-creator}"
+            
+      build_script:
+        - cmd: C:\msys64\usr\bin\bash -lc "mkdir -p /c/adi-kuiper-imager/build/deploy"
+        - cmd: C:\msys64\usr\bin\bash -lc "cp /c/msys64/mingw32/bin/{libbrotlicommon.dll,libbrotlidec.dll,libbrotlienc.dll,libdouble-conversion.dll,libfreetype-6.dll,libglib-2.0-0.dll,libgraphite2.dll,libharfbuzz-0.dll,libicudt69.dll,libicuin69.dll,libicuuc69.dll,libintl-8.dll,liblzma-5.dll,libmd4c.dll,libpcre-1.dll,libpcre2-16-0.dll,libpng16-16.dll,zlib1.dll,libbz2-1.dll,libiconv-2.dll,liblz4.dll,libxml2-2.dll,libzstd.dll,libgcc_s_dw2-1.dll,libstdc++-6.dll,libwinpthread-1.dll} /c/adi-kuiper-imager/build/deploy"
+        - cmd: C:\msys64\usr\bin\bash -lc "cp /c/OpenSSL-Win32/libeay32.dll /c/adi-kuiper-imager/build/deploy"
+
+        - cmd: >-
+            C:\msys64\usr\bin\bash -lc "
+            export PATH=/c/msys64/mingw32/bin:/c/msys64/usr/bin:$PATH &&
+            cmake -B /c/adi-kuiper-imager/build -S /c/adi-kuiper-imager -GNinja -DCMAKE_BUILD_TYPE:STRING=Release -DQT_QMAKE_EXECUTABLE:STRING="/c/msys64/mingw32/bin/qmake.exe" -DCMAKE_PREFIX_PATH:STRING="/c/msys64/mingw32/bin" -DCMAKE_C_COMPILER:STRING="/c/msys64/mingw32/bin/gcc.exe" -DCMAKE_CXX_COMPILER:STRING="/c/msys64/mingw32/bin/g++.exe" -DCMAKE_MAKE_PROGRAM:FILEPATH="/c/msys64/mingw32/bin/ninja.exe" /c/adi-kuiper-imager &&
+            cmake --build /c/adi-kuiper-imager/build --target all"
+        - '"C:\Program Files (x86)\NSIS\makensis.exe" C:\adi-kuiper-imager\build\kuiper-imager.nsi'
+      
+      after_build:  
+        - ps: Push-AppveyorArtifact "C:\adi-kuiper-imager\build\imager-1.6.2.exe"
+    -
+      matrix:
+        only:
+          - image: Ubuntu2004
+      
+      clone_folder: ~/adi-kuiper-imager
+
+      install:
+        - sh: sudo apt-get update
+        - sh: sudo apt-get -y install --no-install-recommends build-essential devscripts debhelper cmake git libarchive-dev libcurl4-openssl-dev qtbase5-dev qtbase5-dev-tools qtdeclarative5-dev libqt5svg5-dev qttools5-dev qt5-default libssl-dev qml-module-qtquick2 qml-module-qtquick-controls2 qml-module-qtquick-layouts qml-module-qtquick-templates2 qml-module-qtquick-window2 qml-module-qtgraphicaleffects
+      
+      build_script:
+        - sh: cd ~/adi-kuiper-imager
+        - sh: debuild -uc -us -ui
+
+      after_build:
+        - sh: appveyor PushArtifact ~/kuiper-imager*.deb

@@ -115,11 +115,6 @@ public:
     void setImageCustomization(const QByteArray &config, const QByteArray &cmdline, const QByteArray &firstrun);
 
     /*
-     * Enable project customization
-     */
-    void setProjectCustomization(const QByteArray &project);
-
-    /*
      * Thread safe download progress query functions
      */
     uint64_t dlNow();
@@ -153,7 +148,7 @@ protected:
     void _closeFiles();
     QByteArray _fileGetContentsTrimmed(const QString &filename);
     bool _customizeImage();
-    bool _setupProject(QString folder, QByteArray project);
+    bool _setupProject(QString folder);
 
     /*
      * libcurl callbacks
@@ -170,7 +165,7 @@ protected:
     curl_off_t _startOffset;
     std::atomic<std::uint64_t> _lastDlTotal, _lastDlNow, _verifyTotal, _lastVerifyNow, _bytesWritten;
     qint64 _sectorsStart;
-    QByteArray _url, _useragent, _buf, _filename, _lastError, _expectedHash, _config, _cmdline, _firstrun, _project;
+    QByteArray _url, _useragent, _buf, _filename, _lastError, _expectedHash, _config, _cmdline, _firstrun;
     char *_firstBlock;
     size_t _firstBlockSize;
     static QByteArray _proxy;

@@ -5,14 +5,35 @@
     },
     "os_list": [
         {
-            "name": "ADI Kuiper Linux (32-bit)",
-            "description": "ADI flavoured Linux operating system based on RPI OS (Recommended)",
-            "icon": "icons/Kuiper_ico.png",
-            "url": "https://swdownloads.analog.com/cse/kuiper/2021-02-23-ADI-Kuiper.img.xz",
-            "extract_size": 10104078336,
-            "extract_sha256": "afce1a45fc633607281ca6c7dd22a974a6cb56b9318a7e3d4b41b1b6f0a68236",
-            "image_download_size": 2637950856,
-            "release_date": "2021-02-23"
+            "name": "ADI Kuiper Linux",
+            "description": "ADI flavoured Linux operating system based on RPI OS",
+            "icon": "icons/os_kuiper.png",
+            "subitems_url": "https://swdownloads.analog.com/cse/kuiper/kuiper_list.json"
+        },
+        {
+            "name": "ADI 3D ToF software suite",
+            "description": "Nvidia L4T image with the ADDI9036 ToF SDK installed",
+            "icon": "https://static6.arrow.com/aropdfconversion/arrowimages/733c85b04680b48d6b3dc9ea0b1a0cd8ecae5b98/addi9036bcbzrlmainimage.jpg",
+            "subitems": [
+                {
+                    "name": "AD-96TOF1-EBZ",
+                    "description": " ",
+                    "icon": "https://wiki.analog.com/_media/resources/eval/user-guides/ad-96tofebz/board_revc.jpg?w=400&tok=d62103",
+                    "subitems_url": "https://swdownloads.analog.com/cse/aditof/imager/ad-96tof1-ebz.json"
+                },
+                {
+                    "name": "AD-FXTOF1-EBZ",
+                    "description": " ",
+                    "icon": "https://media.digikey.com/Photos/Analog%20Devices%20Photos/MFG_AD-FXTOF1-EBZ.jpg",
+                    "subitems_url": "https://swdownloads.analog.com/cse/aditof/imager/ad-fxtof1-ebz.json"
+                },
+                {
+                    "name": "Chicony ToF",
+                    "description": " ",
+                    "icon": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSgSe-jXKBWsd9QZ6OjOlH2agZo4YOqSO5CbTGS1eis34Yyj4_fM49syYf8I24UznQVLvc&usqp=CAU",
+                    "subitems_url": "https://swdownloads.analog.com/cse/aditof/imager/chicony-tof.json"
+                }
+            ]          
         },
         {
             "name": "Misc utility images",
