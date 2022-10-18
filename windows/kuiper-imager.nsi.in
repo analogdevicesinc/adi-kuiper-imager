@@ -112,18 +112,10 @@ InstallDir "$PROGRAMFILES\Kuiper Imager"
 ######################################################################
 
 !insertmacro MUI_LANGUAGE "English"
-!insertmacro MUI_LANGUAGE "Dutch"
-!insertmacro MUI_LANGUAGE "Italian"
 
 LangString termMsg ${LANG_ENGLISH} "Kuiper Imager seems to be running and busy.$\nDo you want to terminate process?"
 LangString stopMsg ${LANG_ENGLISH} "Stopping Kuiper Imager"
 LangString win7Msg ${LANG_ENGLISH} "Windows 7 or above required"
-LangString termMsg ${LANG_DUTCH} "Kuiper Imager is momenteel actief.$\nWilt u het programma afsluiten?"
-LangString stopMsg ${LANG_DUTCH} "Bezig met afsluiten Kuiper Imager"
-LangString win7Msg ${LANG_DUTCH} "Minimaal Windows 7 is vereist"
-LangString termMsg ${LANG_ITALIAN} "Kuiper Imager sembra essere in esecuzione e occupato.$\nVuoi terminare il processo Kuiper Imager?"
-LangString stopMsg ${LANG_ITALIAN} "Chiusura processo Kuiper Imager"
-LangString win7Msg ${LANG_ITALIAN} "Per l'esecuzione del programma è richiesto Windows 7 o versioni successive"
 
 ######################################################################
 
