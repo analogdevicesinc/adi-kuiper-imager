@@ -158,7 +158,7 @@ QString ImageWriter::_getsStorageInfo(QString name, QString type)
                 QString device(storage.device());
 #ifdef Q_OS_WIN
             if (_mountpoints.contains(storage.name()), QString::compare(storage.displayName(),name) == 0) {
-#elif defined(Q_OS_LINUX)
+#else
             if (device.contains(QString(_dst)) && (QString::compare(storage.name(),name) == 0)) {
 #endif
                 if (type == "path")
@@ -280,10 +280,9 @@ bool ImageWriter::selectProject()
     QString files = _filelist;
 #ifdef Q_OS_WIN
     WinFile bootloader, volumeFile;
-#elif defined(Q_OS_LINUX)
+#else
     QFile bootloader;
     QFile volumeFile;
-#else
 #endif
     static char bootloaderBuf[_numSectors * _sectorSize];
     qint64 _seek_target = _startSector * _sectorSize;
@@ -534,10 +533,9 @@ bool ImageWriter::startProjectConfig()
 {
 #ifdef Q_OS_WIN
     WinFile bootloader, volumeFile;
-#elif defined(Q_OS_LINUX)
+#else
     QFile bootloader;
     QFile volumeFile;
-#else
 #endif
     static char bootloaderBuf[_numSectors * _sectorSize];
     QByteArray partition = _dst.toUtf8();
