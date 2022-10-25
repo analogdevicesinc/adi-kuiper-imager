@@ -6,11 +6,11 @@ if (APPLE)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "" FORCE)
 endif()
 
-project(rpi-imager LANGUAGES CXX C)
+project(kuiper-imager LANGUAGES CXX C)
 set(IMAGER_VERSION_MAJOR 1)
 set(IMAGER_VERSION_MINOR 6)
-set(IMAGER_VERSION_STR "${IMAGER_VERSION_MAJOR}.${IMAGER_VERSION_MINOR}.1")
-set(IMAGER_VERSION_CSV "${IMAGER_VERSION_MAJOR},${IMAGER_VERSION_MINOR},1,0")
+set(IMAGER_VERSION_STR "${IMAGER_VERSION_MAJOR}.${IMAGER_VERSION_MINOR}.2")
+set(IMAGER_VERSION_CSV "${IMAGER_VERSION_MAJOR},${IMAGER_VERSION_MINOR},2,0")
 add_definitions(-DIMAGER_VERSION_STR="${IMAGER_VERSION_STR}")
 add_definitions(-DIMAGER_VERSION_CSV=${IMAGER_VERSION_CSV})
 
@@ -41,7 +41,7 @@ elseif (UNIX)
 elseif (WIN32)
     set(DEPENDENCIES acceleratedcryptographichash.cpp dependencies/mountutils/src/windows/functions.cpp dependencies/drivelist/src/windows/list.cpp
         windows/winfile.cpp windows/winfile.h
-        windows/rpi-imager.rc)
+        windows/kuiper-imager.rc)
     find_package(Qt5WinExtras REQUIRED)
     set(EXTRALIBS setupapi wlanapi Qt5::WinExtras)
 endif()
@@ -126,25 +126,26 @@ if (WIN32)
     # Bundled fat32format
     add_subdirectory(dependencies/fat32format)
     add_dependencies(${PROJECT_NAME} fat32format)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
     # Strip debug symbols
     add_custom_command(TARGET ${PROJECT_NAME}
         POST_BUILD
         COMMAND ${CMAKE_STRIP} "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.exe")
 
-    # Code signing
-    find_program(SIGNTOOL "signtool.exe" PATHS "c:/Program Files (x86)/Microsoft SDKs/ClickOnce/SignTool")
-    if (NOT SIGNTOOL)
-        message(FATAL_ERROR "Unable to locate signtool.exe used for code signing")
-    endif()
-
-    add_custom_command(TARGET ${PROJECT_NAME}
-        POST_BUILD
-        COMMAND "${SIGNTOOL}" sign /tr http://timestamp.digicert.com /td sha256 /fd sha256 /a "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.exe")
-
-    add_custom_command(TARGET ${PROJECT_NAME}
-        POST_BUILD
-        COMMAND "${SIGNTOOL}" sign /tr http://timestamp.digicert.com /td sha256 /fd sha256 /a "${CMAKE_BINARY_DIR}/dependencies/fat32format/fat32format.exe")
+#    # Code signing
+#    find_program(SIGNTOOL "signtool.exe" PATHS "c:/Program Files (x86)/Microsoft SDKs/ClickOnce/SignTool")
+#    if (NOT SIGNTOOL)
+#        message(FATAL_ERROR "Unable to locate signtool.exe used for code signing")
+#    endif()
+#    
+#    add_custom_command(TARGET ${PROJECT_NAME}
+#        POST_BUILD
+#        COMMAND "${SIGNTOOL}" sign /tr http://timestamp.digicert.com /td sha256 /fd sha256 /a "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.exe")
+#    
+#    add_custom_command(TARGET ${PROJECT_NAME}
+#        POST_BUILD
+#        COMMAND "${SIGNTOOL}" sign /tr http://timestamp.digicert.com /td sha256 /fd sha256 /a "${CMAKE_BINARY_DIR}/dependencies/fat32format/fat32format.exe")
 
     # Windeploy
     find_program(WINDEPLOYQT "windeployqt.exe" PATHS "${Qt5_DIR}/../../../bin")
@@ -167,13 +168,13 @@ if (WIN32)
             "${CMAKE_BINARY_DIR}/deploy")
 
     configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/windows/rpi-imager.nsi.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/rpi-imager.nsi"
+        "${CMAKE_CURRENT_SOURCE_DIR}/windows/kuiper-imager.nsi.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/kuiper-imager.nsi"
         @ONLY)
 
     add_custom_command(TARGET ${PROJECT_NAME}
         POST_BUILD
-        COMMAND "${WINDEPLOYQT}" --no-translations --no-webkit2 --no-opengl-sw --angle --qmldir "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/deploy/rpi-imager.exe")
+        COMMAND "${WINDEPLOYQT}" --no-translations --no-webkit2 -opengl -no-angle --qmldir "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/deploy/kuiper-imager.exe")
 
     # Remove excess files
     add_custom_command(TARGET ${PROJECT_NAME}
@@ -237,14 +238,14 @@ else()
     endif()
 
     configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/linux/rpi-imager.metainfo.xml.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/rpi-imager.metainfo.xml"
+        "${CMAKE_CURRENT_SOURCE_DIR}/linux/kuiper-imager.metainfo.xml.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/kuiper-imager.metainfo.xml"
         @ONLY)
 
-    install(TARGETS rpi-imager DESTINATION bin)
-    install(FILES icons/rpi-imager.png DESTINATION share/icons/hicolor/128x128/apps)
-    install(FILES linux/rpi-imager.desktop DESTINATION share/applications)
-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/rpi-imager.metainfo.xml" DESTINATION share/metainfo)
+    install(TARGETS kuiper-imager DESTINATION bin)
+    install(FILES icons/kuiper-imager.png DESTINATION share/icons/hicolor/128x128/apps)
+    install(FILES linux/kuiper-imager.desktop DESTINATION share/applications)
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/kuiper-imager.metainfo.xml" DESTINATION share/metainfo)
 endif()
 
 get_target_property(QT_TARGET_TYPE Qt5::Core TYPE)

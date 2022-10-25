@@ -29,10 +29,10 @@ public:
     void setEngine(QQmlApplicationEngine *engine);
 
     /* Set URL to download from, and if known download length and uncompressed length */
-    Q_INVOKABLE void setSrc(const QUrl &url, quint64 downloadLen = 0, quint64 extrLen = 0, QByteArray expectedHash = "", bool multifilesinzip = false, QString parentcategory = "", QString osname = "");
+    Q_INVOKABLE void setSrc(const QUrl &url, quint64 downloadLen = 0, quint64 extrLen = 0, QByteArray expectedHash = "", bool multifilesinzip = false,  bool skipformat = false, QString parentcategory = "", QString osname = "");
 
     /* Set device to write to */
-    Q_INVOKABLE void setDst(const QString &device, quint64 deviceSize = 0);
+    Q_INVOKABLE void setDst(const QString &device, quint64 deviceSize = 0, QStringList mountpoints = {});
 
     /* Enable/disable verification */
     Q_INVOKABLE void setVerifyEnabled(bool verify);
@@ -106,12 +106,22 @@ public:
     Q_INVOKABLE bool getBoolSetting(const QString &key);
     Q_INVOKABLE void setSetting(const QString &key, const QVariant &value);
     Q_INVOKABLE void setImageCustomization(const QByteArray &config, const QByteArray &cmdline, const QByteArray &firstrun);
-    Q_INVOKABLE void setProjectCustomization(const QByteArray &project);
     Q_INVOKABLE void setSavedCustomizationSettings(const QVariantMap &map);
     Q_INVOKABLE QVariantMap getSavedCustomizationSettings();
     Q_INVOKABLE void clearSavedCustomizationSettings();
     Q_INVOKABLE bool hasSavedCustomizationSettings();
-
+    Q_INVOKABLE bool hasKuiper();
+    Q_INVOKABLE QByteArray scanProjectList(QString projectPath, QString type);
+    Q_INVOKABLE QByteArray getPlatformList( QString type);
+    Q_INVOKABLE QByteArray getProjectList();
+    Q_INVOKABLE void setProjectSearch(QString val, int index);
+    Q_INVOKABLE QString getProjectSearch(int index);
+    Q_INVOKABLE bool setupProject(QString binaries, QString project);
+    Q_INVOKABLE bool selectProject();
+    Q_INVOKABLE void setProjectFiles(QString kernel, QString preloader, QString filelist);
+    Q_INVOKABLE bool startProjectConfig();
+    Q_INVOKABLE void setProjectListUrl(QString url);
+    Q_INVOKABLE QUrl getProjectListUrl();
     Q_INVOKABLE QString crypt(const QByteArray &password);
 
 signals:
@@ -144,22 +154,34 @@ protected slots:
     void onPreparationStatusUpdate(QString msg);
 
 protected:
-    QUrl _src, _repo, _proj;
+    QUrl _src, _repo, _proj, _projlist;
     QString _dst, _cacheFileName, _parentCategory, _osName;
-    QByteArray _expectedHash, _cachedFileHash, _cmdline, _config, _firstrun, _project;
+    QString _projectConfig[3];
+    QString _kernel, _preloader, _filelist;
+    QStringList _binaries, _mountpoints;
+    QByteArray _expectedHash, _cachedFileHash, _cmdline, _config, _firstrun;
     quint64 _downloadLen, _extrLen, _devLen, _dlnow, _verifynow;
     DriveListModel _drivelist;
     QQmlApplicationEngine *_engine;
     QTimer _polltimer, _networkchecktimer;
     PowerSaveBlocker _powersave;
     DownloadThread *_thread;
-    bool _verifyEnabled, _multipleFilesInZip, _cachingEnabled, _embeddedMode, _online;
+    bool _verifyEnabled, _multipleFilesInZip, _skipFormat, _cachingEnabled, _embeddedMode, _online;
     QSettings _settings;
 #ifdef Q_OS_WIN
     QWinTaskbarButton *_taskbarButton;
 #endif
+    QString _project;
+    /*
+     *  altera preloader variables
+     */
+    static const qint64 _sectorSize = 512;
+    static const qint64 _startSector = 4202496;
+    static const qint64 _numSectors = 8192;
 
     void _parseCompressedFile();
+    QString _getsStorageInfo(QString name, QString type);
+    void setupBootWrite();
 };
 
 #endif // IMAGEWRITER_H

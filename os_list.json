@@ -5,22 +5,29 @@
     },
     "os_list": [
         {
-            "name": "ADI Kuiper Linux (32-bit)",
-            "description": "ADI flavoured Linux operating system based on RPI OS (Recommended)",
-            "icon": "icons/Kuiper_ico.png",
-            "url": "https://swdownloads.analog.com/cse/kuiper/2021-02-23-ADI-Kuiper.img.xz",
-            "extract_size": 10104078336,
-            "extract_sha256": "afce1a45fc633607281ca6c7dd22a974a6cb56b9318a7e3d4b41b1b6f0a68236",
-            "image_download_size": 2637950856,
-            "release_date": "2021-02-23"
+            "name": "ADI Kuiper Linux",
+            "description": "ADI flavoured Linux operating system based on RPI OS",
+            "icon": "icons/os_kuiper.png",
+            "subitems_url": "https://swdownloads.analog.com/cse/kuiper/imager/kuiper_os_list.json"
         },
         {
-            "name": "Misc utility images",
-            "description": "Bootloader EEPROM configuration, etc.",
+            "name": "ADI 3D ToF software suite",
+            "description": "Nvidia L4T image with the ADDI9036 ToF SDK installed",
+            "icon": "https://swdownloads.analog.com/cse/aditof/imager/icons/adsd3100.png",
+            "subitems_url": "https://swdownloads.analog.com/cse/kuiper/imager/tof-kuiper.json"
+        },
+        {
+            "name": "Advanced",
+            "description": "",
             "icon": "icons/cat_misc_utility_images.png",
             "subitems": [
                 {
-                    "name": "Bootloader",
+                    "name": "Update BOOT partition",
+                    "description": "Rewrite the whole partition with the latest release",
+                    "subitems_url": "https://swdownloads.analog.com/cse/boot_partition_files/boot_list.json"
+                },
+                {
+                    "name": "RPI Bootloader",
                     "description": "Restore the factory default settings and change boot priority",
                     "icon": "https://downloads.raspberrypi.org/raspios_armhf/Raspberry_Pi_OS_(32-bit).png",
                     "subitems_url": "https://downloads.raspberrypi.org/eeprom_recovery.json"

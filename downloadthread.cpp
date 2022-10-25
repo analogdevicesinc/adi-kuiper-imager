@@ -42,7 +42,7 @@ DownloadThread::DownloadThread(const QByteArray &url, const QByteArray &localfil
     _curlCount++;
 
     QSettings settings;
-    _ejectEnabled = settings.value("eject", true).toBool();
+    // _ejectEnabled = settings.value("eject", true).toBool();
 }
 
 DownloadThread::~DownloadThread()
@@ -400,7 +400,7 @@ void DownloadThread::run()
                                    QSettings::Registry64Format);
                 if (registry.value("EnableControlledFolderAccess").toInt() == 1)
                 {
-                    msg += "<br>"+tr("Controlled Folder Access seems to be enabled. Please add both rpi-imager.exe and fat32format.exe to the list of allowed apps and try again.");
+                    msg += "<br>"+tr("Controlled Folder Access seems to be enabled. Please add both kuiper-imager.exe and fat32format.exe to the list of allowed apps and try again.");
                 }
                 _onDownloadError(msg);
             }
@@ -798,35 +798,6 @@ void DownloadThread::setImageCustomization(const QByteArray &config, const QByte
     _firstrun = firstrun;
 }
 
-void DownloadThread::setProjectCustomization(const QByteArray &project)
-{
-    _project = project;
-}
-
-bool DownloadThread::_setupProject(QString folder, QByteArray project)
-{
-    /* Copy project files */
-    QString basepath(folder + "/" + project);
-    QDirIterator dirIterator(basepath, {"*.BIN", "*.dtb", "*.rbf"}, QDir::Files, QDirIterator::Subdirectories);
-
-    while (dirIterator.hasNext()) {
-       QString src(dirIterator.next());
-       QString dst = folder + "/" + dirIterator.fileName();
-
-       QFile::copy(src, dst);
-       qDebug() << dst;
-    }
-
-    /* Setup the kernel image */
-    if (project.contains("zynqmp")) {
-        QFile::copy(folder + "/" + "zynqmp-common/Image", folder + "/Image"); //copy kernel image for Zynqmp
-    } else if (project.contains("zynq")) {
-        QFile::copy(folder + "/" + "zynq-common/uImage", folder + "/uImage"); //copy kernel image for Zynq
-    }
-
-    return true;
-}
-
 bool DownloadThread::_customizeImage()
 {
     QString folder;
@@ -927,7 +898,6 @@ bool DownloadThread::_customizeImage()
 
     if (mountpoints.empty())
     {
-        //
         qDebug() << "drive info. searching for:" << devlower;
         auto l = Drivelist::ListStorageDevices();
         for (auto i : l)
@@ -937,7 +907,6 @@ bool DownloadThread::_customizeImage()
                 qDebug() << "mountpoint:" << QByteArray::fromStdString(mp);
             }
         }
-        //
 
         emit error(tr("Operating system did not mount FAT32 partition"));
         return false;
@@ -946,6 +915,7 @@ bool DownloadThread::_customizeImage()
     /* Some operating system take longer to complete mounting FAT32
        wait up to 3 seconds for config.txt file to appear */
     QString configFilename;
+    QStringList content;
     bool foundFile = false;
 
     for (int tries = 0; tries < 3; tries++)
@@ -957,9 +927,9 @@ bool DownloadThread::_customizeImage()
             folder = QString::fromStdString(mp);
             if (!folder.isEmpty() && folder.back() == '\\')
                 folder.chop(1);
-            configFilename = folder+"/config.txt";
+            content = QDir(folder).entryList(QDir::NoDotAndDotDot |QDir::Dirs |QDir::Files);
 
-            if (QFile::exists(configFilename))
+            if (!content.isEmpty())
             {
                 foundFile = true;
                 break;
@@ -972,101 +942,14 @@ bool DownloadThread::_customizeImage()
 
     if (!foundFile)
     {
-        emit error(tr("Unable to customize. File '%1' does not exist.").arg(configFilename));
+        emit error(tr("Unable to prepare for image customization."));
         return false;
-    }
-
-    emit preparationStatusUpdate(tr("Customizing image"));
-
-    if (!_firstrun.isEmpty())
-    {
-        QFile f(folder+"/firstrun.sh");
-        if (f.open(f.WriteOnly) && f.write(_firstrun) == _firstrun.length())
-        {
-            f.close();
-        }
-        else
-        {
-            emit error(tr("Error creating firstrun.sh on FAT partition"));
-            return false;
-        }
-    }
-
-    if (!_config.isEmpty())
-    {
-        auto configItems = _config.split('\n');
-        configItems.removeAll("");
-        QByteArray config;
-
-        QFile f(configFilename);
-        if (f.open(f.ReadOnly))
-        {
-            config = f.readAll();
-            f.close();
-        }
-
-        for (QByteArray item : configItems)
-        {
-            if (config.contains("#"+item)) {
-                /* Uncomment existing line */
-                config.replace("#"+item, item);
-            } else if (config.contains("\n"+item)) {
-                /* config.txt already contains the line */
-            } else {
-                /* Append new line to config.txt */
-                if (config.right(1) != "\n")
-                    config += "\n"+item+"\n";
-                else
-                    config += item+"\n";
-            }
-        }
-
-        if (f.open(f.WriteOnly) && f.write(config) == config.length())
-        {
-            f.close();
-        }
-        else
-        {
-            emit error(tr("Error writing to config.txt on FAT partition"));
-            return false;
-        }
-    }
-
-    if (!_cmdline.isEmpty())
-    {
-        QByteArray cmdline;
-
-        QFile f(folder+"/cmdline.txt");
-        if (f.exists() && f.open(f.ReadOnly))
-        {
-            cmdline = f.readAll().trimmed();
-            f.close();
-        }
-
-        cmdline += _cmdline;
-        if (f.open(f.WriteOnly) && f.write(cmdline) == cmdline.length())
-        {
-            f.close();
-        }
-        else
-        {
-            emit error(tr("Error writing to cmdline.txt on FAT partition"));
-            return false;
-        }
-    }
-
-    if (!_project.isEmpty())
-    {
-        if (!_setupProject(folder, _project)) {
-            emit error(tr("Error writing project files on FAT partition"));
-            return false;
-        }
     }
 
     emit finalizing();
 
 #ifdef Q_OS_LINUX
-    if (manualmount)
+    if (manualmount && _ejectEnabled)
     {
         if (::access(devlower.constData(), W_OK) != 0)
         {

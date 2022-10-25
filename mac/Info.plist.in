@@ -5,11 +5,11 @@
   <key>CFBundleDevelopmentRegion</key>
   <string>English</string>
   <key>CFBundleExecutable</key>
-  <string>rpi-imager</string>
+  <string>kuiper-imager</string>
   <key>CFBundleGetInfoString</key>
   <string></string>
   <key>CFBundleIconFile</key>
-  <string>rpi-imager.icns</string>
+  <string>kuiper-imager.icns</string>
   <key>CFBundleIdentifier</key>
   <string>org.raspberrypi.imagingutility</string>
   <key>CFBundleInfoDictionaryVersion</key>
@@ -17,7 +17,7 @@
   <key>CFBundleLongVersionString</key>
   <string></string>
   <key>CFBundleName</key>
-  <string>Raspberry Pi Imager</string>
+  <string>Kuiper Imager</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>

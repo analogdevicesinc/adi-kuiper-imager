@@ -225,7 +225,7 @@ void DownloadExtractThread::extractMultiFileRun()
         auto l = Drivelist::ListStorageDevices();
         for (auto i : l)
         {
-            if (QByteArray::fromStdString(i.device).toLower() == devlower && i.mountpoints.size() == 1)
+            if (QByteArray::fromStdString(i.device).toLower() == devlower)// && i.mountpoints.size() == 1)
             {
                 folder = QByteArray::fromStdString(i.mountpoints.front());
                 break;
@@ -282,8 +282,8 @@ void DownloadExtractThread::extractMultiFileRun()
     /* Extra safety checks: do not allow existing files to be overwritten (SD card should be formatted by previous step),
      * do not allow absolute paths, do not allow insecure symlinks, no special permissions */
     int r, flags = ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_SECURE_NOABSOLUTEPATHS
-            | ARCHIVE_EXTRACT_SECURE_NODOTDOT | ARCHIVE_EXTRACT_SECURE_SYMLINKS | ARCHIVE_EXTRACT_NO_OVERWRITE
-            /*ARCHIVE_EXTRACT_PERM | ARCHIVE_EXTRACT_ACL | ARCHIVE_EXTRACT_FFLAGS | ARCHIVE_EXTRACT_XATTR*/;
+            | ARCHIVE_EXTRACT_SECURE_NODOTDOT | ARCHIVE_EXTRACT_SECURE_SYMLINKS /*| ARCHIVE_EXTRACT_NO_OVERWRITE
+            ARCHIVE_EXTRACT_PERM | ARCHIVE_EXTRACT_ACL | ARCHIVE_EXTRACT_FFLAGS | ARCHIVE_EXTRACT_XATTR*/;
 #ifndef Q_OS_WIN
     if (::getuid() == 0)
         flags |= ARCHIVE_EXTRACT_OWNER;
@@ -394,7 +394,8 @@ void DownloadExtractThread::extractMultiFileRun()
     }
 #endif
 
-    eject_disk(_filename.constData());
+    if (_ejectEnabled)
+        eject_disk(_filename.constData());
 }
 
 ssize_t DownloadExtractThread::_on_read(struct archive *, const void **buff)

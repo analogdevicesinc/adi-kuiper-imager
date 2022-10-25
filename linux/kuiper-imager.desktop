@@ -2,8 +2,8 @@
 Type=Application
 Version=1.0
 Name=Imager
-Comment=Raspberry Pi Imager
-Icon=rpi-imager
-Exec=rpi-imager
+Comment=Kuiper Imager
+Icon=kuiper-imager
+Exec=kuiper-imager
 Categories=Utility
 StartupNotify=false

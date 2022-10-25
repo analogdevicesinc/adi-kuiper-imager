@@ -8,18 +8,16 @@ import QtQuick.Window 2.2
 import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.0
 import QtQuick.Controls.Material 2.2
+import QtGraphicalEffects 1.0
 
 ApplicationWindow {
     id: window
     visible: true
 
-    width: imageWriter.isEmbeddedMode() ? -1 : 680
-    height: imageWriter.isEmbeddedMode() ? -1 : 420
-    minimumWidth: imageWriter.isEmbeddedMode() ? -1 : 680
-    //maximumWidth: imageWriter.isEmbeddedMode() ? -1 : 680
-    minimumHeight: imageWriter.isEmbeddedMode() ? -1 : 420
-    //maximumHeight: imageWriter.isEmbeddedMode() ? -1 : 420
-
+    width:  640
+    height: 480
+    minimumWidth: 480
+    minimumHeight: 400
     title: qsTr("ADI Kuiper Imager v%1").arg(imageWriter.constantVersion())
 
     FontLoader {id: roboto;      source: "fonts/Roboto-Regular.ttf"}
@@ -47,338 +45,368 @@ ApplicationWindow {
         sequences: ["Shift+Ctrl+X", "Shift+Meta+X"]
         context: Qt.ApplicationShortcut
         onActivated: {
-            optionspopup.openPopup()
+            if (progressBar.visible == false)
+                optionspopup.openPopup()
         }
     }
 
     ColumnLayout {
         id: bg
+        height: 480
+        anchors.fill: parent
+        anchors.bottomMargin: 0
         spacing: 0
 
         Rectangle {
+            id: logo
+            y: 0
+            width: 640
+            height: 160
+            Layout.preferredHeight: 120
+            clip: false
+            Layout.fillHeight: false
+            Layout.fillWidth: true
             implicitHeight: window.height/2
 
             Image {
-                id: image
+                id: imgLogo
+                anchors.fill: parent
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-                fillMode: Image.PreserveAspectFit
                 source: "icons/Kuiper.svg"
-                width: window.width
-                height: window.height/2
+                fillMode: Image.PreserveAspectFit
+                sourceSize.height: 126
+                sourceSize.width: 805
+                clip: false
             }
         }
 
         Rectangle {
-            color: "#b8b8f2"
+            id: controls
+            y: 160
+            height: 260
+            color: "#e67e22"
+            Layout.preferredWidth: -1
+            Layout.preferredHeight: -1
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+            clip: false
             implicitWidth: window.width
             implicitHeight: window.height/2
 
-            GridLayout {
-                id: gridLayout
-                rowSpacing: 25
+            ColumnLayout {
+                id: columnLayout
+                y: 14
+                width: 100
+                height: 200
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.rightMargin: 10
+                anchors.leftMargin: 10
+                spacing: 0
+                clip: false
 
-                anchors.fill: parent
-                anchors.topMargin: 25
-                anchors.rightMargin: 50
-                anchors.leftMargin: 50
-
-                rows: 4
-                columns: 3
-                columnSpacing: 25
-
-                ColumnLayout {
-                    id: columnLayout
-                    spacing: 0
-                    Layout.fillWidth: true
-
-                    Text {
-                        id: text1
-                        color: "#ffffff"
-                        text: qsTr("Operating System")
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 17
-                        Layout.preferredWidth: 100
-                        font.pixelSize: 12
-                        font.family: robotoBold.name
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                    }
-
-                    Button {
-                        id: osbutton
-                        text: imageWriter.srcFileName() === "" ? qsTr("CHOOSE OS") : imageWriter.srcFileName()
-                        font.family: roboto.name
-                        spacing: 0
-                        padding: 0
-                        bottomPadding: 0
-                        topPadding: 0
-                        Layout.minimumHeight: 40
-                        Layout.fillWidth: true
-                        onClicked: {
-                            ospopup.open()
-                            osswipeview.currentItem.forceActiveFocus()
-                        }
-                        Material.background: "#ffffff"
-                        Material.foreground: "#000000"
-                        Accessible.ignored: ospopup.visible || dstpopup.visible
-                        Accessible.description: qsTr("Select this button to change the operating system")
-                        Accessible.onPressAction: clicked()
-                    }
-
-                    Text {
-                        id: text3
-                        color: "#ffffff"
-                        text: qsTr("Platform")
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 17
-                        Layout.preferredWidth: 100
-                        font.pixelSize: 12
-                        font.family: robotoBold.name
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                    }
-
-                    ComboBox {
-                        id: platform
-                        font.family: roboto.name
-                        spacing: 0
-                        padding: 0
-                        bottomPadding: 0
-                        topPadding: 0
-                        Layout.minimumHeight: 40
-                        Layout.fillWidth: true
-                        onCurrentTextChanged: { selectPlatform(); }
-                        model: ListModel {
-                            id: platform_model
-                            dynamicRoles: true       
-                            Component.onCompleted: {
-                                if (imageWriter.isOnline()) {
-                                    fetchProjlist();
-                                }
-                            }
-                        }
-
-                    }
-                }
-
-                ColumnLayout {
-                    id: columnLayout2
-                    spacing: 0
-                    Layout.fillWidth: true
-
-                    Text {
-                        id: text2
-                        color: "#ffffff"
-                        text: qsTr("Storage")
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 17
-                        Layout.preferredWidth: 100
-                        font.pixelSize: 12
-                        font.family: robotoBold.name
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                    }
-
-                    Button {
-                        id: dstbutton
-                        text: qsTr("CHOOSE STORAGE")
-                        font.family: roboto.name
-                        Layout.minimumHeight: 40
-                        Layout.preferredWidth: 100
-                        Layout.fillWidth: true
-                        onClicked: {
-                            imageWriter.startDriveListPolling()
-                            dstpopup.open()
-                            dstlist.forceActiveFocus()
-                        }
-                        Material.background: "#ffffff"
-                        Material.foreground: "#000000"
-                        Accessible.ignored: ospopup.visible || dstpopup.visible
-                        Accessible.description: qsTr("Select this button to change the destination storage device")
-                        Accessible.onPressAction: clicked()
-                    }
-
-                    Text {
-                        id: text4
-                        color: "#ffffff"
-                        text: qsTr("Project")
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 17
-                        Layout.preferredWidth: 100
-                        font.pixelSize: 12
-                        font.family: robotoBold.name
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                    }
-
-                    ComboBox {
-                        id: project
-                        font.family: roboto.name
-                        spacing: 0
-                        padding: 0
-                        bottomPadding: 0
-                        topPadding: 0
-                        Layout.minimumHeight: 40
-                        Layout.fillWidth: true
-                        onCurrentTextChanged: {
-                            var project_str = platform.currentText + project.currentText
-                            imageWriter.setProjectCustomization(project_str)
-                        }
-                        model: ListModel {
-                            id: project_model
-                            dynamicRoles: true
-                        }
-                    }
-                }
-
-                ColumnLayout {
-                    spacing: 0
-                    Layout.fillWidth: true
-
-                    Text {
-                        text: " "
-                        Layout.preferredHeight: 17
-                        Layout.preferredWidth: 100
-                    }
-
-                    Button {
-                        id: writebutton
-                        text: qsTr("WRITE")
-                        font.family: roboto.name
-                        Layout.minimumHeight: 40
-                        Layout.fillWidth: true
-                        Accessible.ignored: ospopup.visible || dstpopup.visible
-                        Accessible.description: qsTr("Select this button to start writing the image")
-
-                        enabled: false
-                        Material.background: "#ffffff"
-                        Material.foreground: "#000000"
-                        onClicked: {
-                            if (!imageWriter.readyToWrite()) {
-                                return
-                            }
-
-                            if (!optionspopup.initialized && imageWriter.hasSavedCustomizationSettings()) {
-                                usesavedsettingspopup.openPopup()
-                            } else {
-                                confirmwritepopup.askForConfirmation()
-                            }
-                        }
-                        Accessible.onPressAction: clicked()
-                    }
-                }
-
-                ColumnLayout {
-                    id: columnLayout3
-                    Layout.columnSpan: 3
+                Button {
+                    id: btnStorage
+                    height: 40
+                    text: qsTr("Storage (unconfigured)")
+                    Layout.rightMargin: 0
+                    Layout.bottomMargin: 0
+                    Layout.leftMargin: 0
+                    Layout.topMargin: 0
+                    spacing: 6
+                    flat: false
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                    transformOrigin: Item.Center
+                    Layout.fillHeight: true
+                    Layout.preferredHeight: -1
+                    highlighted: (btnStorage.text == qsTr("Storage (unconfigured)")) ? true : false
+                    Material.background: btnStorage.highlighted ? Material.Pink : "#2ecc71"
+                    Layout.fillWidth: true
+                    clip: true
 
-                    Text {
-                        id: progressText
-                        font.pointSize: 10
-                        color: "white"
-                        font.family: robotoBold.name
-                        font.bold: true
-                        visible: false
-                        horizontalAlignment: Text.AlignHCenter
-                        Layout.fillWidth: true
+                    ToolTip.delay: 300
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Select the destination storage that should be written or modified")
+
+                    onClicked: {
+                        storagePopup.open()
+                        btnWrite.enabled = false
                     }
 
-                    ProgressBar {
-                        id: progressBar
-                        Layout.fillWidth: true
-                        visible: false
-                        Material.background: "#d15d7d"
-                    }
+                }
 
-                    Button {
-                        id: cancelwritebutton
-                        text: qsTr("CANCEL WRITE")
-                        onClicked: {
-                            enabled = false
-                            progressText.text = qsTr("Cancelling...")
-                            imageWriter.cancelWrite()
+                Button {
+                    id: btnOs
+                    height: 40
+                    text: qsTr("Image Source (unconfigured)")
+                    enabled: false
+                    Layout.rightMargin: 0
+                    Layout.bottomMargin: 0
+                    Layout.leftMargin: 0
+                    Layout.topMargin: 0
+                    spacing: 6
+                    flat: false
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                    transformOrigin: Item.Center
+                    clip: true
+                    Layout.fillHeight: true
+                    Layout.preferredHeight: -1
+                    Layout.fillWidth: true
+                    highlighted: false
+                    Material.background: btnOs.highlighted ? Material.Pink : "#2ecc71"
+
+                    ToolTip.delay: 300
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Select the desired content that should be written on the storage above")
+
+                    onClicked: {
+                        ospopup.open()
+                        osswipeview.currentItem.forceActiveFocus()
+                        btnOs.text = ""
+                        btnOs.highlighted = true
+                        btnWrite.enabled = false
+                        btnWrite.enabled = false
+                    }
+                }
+
+                Button {
+                    id: btnTarget
+                    height: 40
+                    text: qsTr("Target (unconfigured)")
+                    enabled: true
+                    Layout.rightMargin: 0
+                    Layout.bottomMargin: 0
+                    Layout.leftMargin: 0
+                    Layout.topMargin: 0
+                    spacing: 6
+                    flat: false
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                    transformOrigin: Item.Center
+                    clip: true
+                    Layout.fillHeight: true
+                    Layout.preferredHeight: -1
+                    Layout.fillWidth: true
+                    highlighted: btnTarget.text == qsTr("Target (unconfigured)") ? true : false
+                    Material.background: btnTarget.highlighted ? Material.Pink : "#2ecc71"
+                    visible: false
+
+                    ToolTip.delay: 300
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Select the project that will be booted on the SD card")
+
+                    onClicked: {
+                        projectpopup.open()
+                    }
+                }
+            }
+
+            Button {
+                id: btnWrite
+                property string contentType;
+                x: 532
+                y: 272
+                text: qsTr("WRITE")
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                enabled: false
+                clip: false
+                anchors.bottomMargin: 8
+                anchors.rightMargin: 10
+                Layout.rightMargin: 10
+                Layout.bottomMargin: 10
+                Layout.topMargin: 0
+                Layout.minimumWidth: 0
+                Layout.preferredWidth: -1
+                Layout.alignment: Qt.AlignRight | Qt.AlignBottom
+                hoverEnabled: true
+
+                ToolTip.delay: 300
+                ToolTip.timeout: 5000
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Start writing or configuring the SD card content")
+
+                onClicked: {
+                    if (btnOs.text != qsTr("CONFIGURE EXISTING CONTENT")) {
+                        if (!imageWriter.readyToWrite()) {
+                            return
                         }
-                        Material.background: "#ffffff"
-                        Material.foreground: "#000000"
-                        Layout.alignment: Qt.AlignRight
-                        visible: false
-                        font.family: roboto.name
-                        Accessible.onPressAction: clicked()
+                        confirmwritepopup.askForConfirmation()
+                    } else {
+                        progressText.visible = true
+                        progressText.text = qsTr("Writing project on the BOOT partition")
+                        msgpopup.title = qsTr("Image configuration")
+                        if(imageWriter.selectProject())
+                            msgpopup.text = "Configuration complete!"
+                        else
+                            msgpopup.text = "Configuration failed!"
+                        msgpopup.openPopup()
+                        resetbtnWrite()
                     }
-                    Button {
-                        id: cancelverifybutton
-                        text: qsTr("CANCEL VERIFY")
-                        onClicked: {
-                            enabled = false
-                            progressText.text = qsTr("Finalizing...")
-                            imageWriter.setVerifyEnabled(false)
-                        }
-                        Material.background: "#ffffff"
-                        Material.foreground: "#000000"
-                        Layout.alignment: Qt.AlignRight
-                        visible: false
-                        font.family: roboto.name
-                        Accessible.onPressAction: clicked()
-                    }
+                    btnTarget.enabled = false
+                }
+                Accessible.onPressAction: clicked()
+            }
+
+            Button {
+                id: cancelbtnWrite
+                x: 532
+                y: 272
+                text: qsTr("CANCEL WRITE")
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                enabled: false
+                clip: false
+                anchors.bottomMargin: 8
+                anchors.rightMargin: 10
+                font.family: roboto.name
+                visible: false
+                Material.background: "#ffffff"
+                Material.foreground: "#c51a4a"
+                Layout.rightMargin: 10
+                Layout.bottomMargin: 10
+                Layout.topMargin: 0
+                Layout.minimumWidth: 0
+                Layout.preferredWidth: -1
+                Layout.alignment: Qt.AlignRight | Qt.AlignBottom
+                Accessible.onPressAction: clicked()
+                onClicked: {
+                    enabled = false
+                    progressText.text = qsTr("Cancelling...")
+                    imageWriter.cancelWrite()
+                }
+            }
+
+            Button {
+                x: 532
+                y: 272
+                id: cancelverifybutton
+                text: qsTr("CANCEL VERIFY")
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                enabled: false
+                clip: false
+                anchors.bottomMargin: 8
+                anchors.rightMargin: 10
+                visible: false
+                font.family: roboto.name
+                Layout.rightMargin: 10
+                Layout.bottomMargin: 10
+                Layout.topMargin: 0
+                Layout.minimumWidth: 0
+                Layout.preferredWidth: -1
+                Layout.alignment: Qt.AlignRight | Qt.AlignBottom
+                Material.background: "#ffffff"
+                Material.foreground: "#c51a4a"
+                Accessible.onPressAction: clicked()
+                onClicked: {
+                    enabled = false
+                    progressText.text = qsTr("Finalizing...")
+                    imageWriter.setVerifyEnabled(false)
+                }
+            }
+
+            RowLayout {
+                id: rowLayout
+                y: 272
+                height: 40
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.rightMargin: 190
+                anchors.leftMargin: 8
+                anchors.bottomMargin: 8
+
+                Text {
+                    id: progressText
+                    text: qsTr("")
+                    font.pixelSize: 12
+                    visible: false
+                }
+
+                ProgressBar {
+                    id: progressBar
+                    Layout.fillWidth: true
+                    visible: false
+                    value: 0.5
                 }
             }
         }
     }
 
-    /*
-      Popup for OS selection
-     */
     Popup {
-        id: ospopup
-        x: 50
-        y: 25
+        id: storagePopup
+        x:50
+        y:25
         width: parent.width-100
-        height: parent.height-50
+        height: parent.height-50    
         padding: 0
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        property string categorySelected : ""
+        onClosed: imageWriter.stopDriveListPolling()
+        onOpened: imageWriter.startDriveListPolling()
 
-        // background of title
-        Rectangle {
-            color: "#f5f5f5"
-            anchors.right: parent.right
-            anchors.top: parent.top
-            height: 35
-            width: parent.width
-        }
-        // line under title
-        Rectangle {
-            color: "#afafaf"
-            width: parent.width
-            y: 35
-            implicitHeight: 1
+        DropShadow {
+            width: storagePopup.width
+            height: storagePopup.height
+            anchors.fill: storagePopupBody
+            source: storagePopupBody
+            horizontalOffset:0
+            verticalOffset: 0
+            radius: storagePopupBody.radius
+            samples: 15
+            color: "black"
         }
 
-        Text {
-            text: "X"
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.rightMargin: 25
-            anchors.topMargin: 10
-            font.family: roboto.name
-            font.bold: true
+        Rectangle {
+            id: storagePopupBody
+            color: "#f0f0f0"
+            anchors.fill: parent
+            anchors.rightMargin: - radius
+            anchors.leftMargin: - radius
+            radius: 10
+            Rectangle {
+                id: storagePopupMargin
+                color: "#aaa5a6"
+                height: 35
+                width: parent.width
+                radius: parent.radius - 4
+                anchors.topMargin: - radius
+            }
+            Rectangle {
+                y: storagePopupMargin.height - height
+                color: storagePopupMargin.color
+                height: storagePopupMargin.height/2
+                width: parent.width
+            }
 
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    ospopup.close()
+            Text {
+                text: "X"
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.rightMargin: 15
+                anchors.topMargin: 10
+                font.bold: true
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        storagePopup.close()
+                    }
                 }
             }
+
         }
 
         ColumnLayout {
             spacing: 10
 
             Text {
-                text: qsTr("Operating System")
+                text: qsTr("Storage")
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 Layout.fillWidth: true
@@ -389,8 +417,250 @@ ApplicationWindow {
 
             Item {
                 clip: true
-                Layout.preferredWidth: oslist.width
-                Layout.preferredHeight: oslist.height
+                Layout.preferredWidth: sourceList.width
+                Layout.preferredHeight: sourceList.height
+
+                SwipeView {
+                    interactive: false
+
+                    ListView {
+                        id: sourceList
+                        model: driveListModel
+                        delegate: sourceDelegate
+                        width: window.width-100
+                        height: window.height-100
+                        boundsBehavior: Flickable.StopAtBounds
+                        highlight:
+                            Rectangle {
+                            color: "lightsteelblue"
+                            radius: 5
+                        }
+                        ScrollBar.vertical: ScrollBar {
+                            width: 10
+                            policy: sourceList.contentHeight > sourceList.height ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
+                        }
+                        Keys.onSpacePressed: {
+                            if (currentIndex == -1)
+                                return
+                            selectDstItem(currentItem)
+                            btnTarget.text = qsTr("Target (unconfigured)")
+                            btnOs.highlighted = true
+                            btnOs.enabled = true
+                        }
+                        Accessible.onPressAction: {
+                            if (currentIndex == -1)
+                                return
+                            selectDstItem(currentItem)
+                            btnTarget.text = qsTr("Target (unconfigured)")
+                            btnOs.highlighted = true
+                            btnOs.enabled = true
+                        }
+                    }
+                }
+            }
+        }
+
+        Component {
+            id: sourceDelegate
+
+            Item {
+                width: window.width - (sourceList.contentHeight > sourceList.height ? 120 : 80)
+                height: 80
+                Accessible.name: {
+                    var txt = description+" - "+(size/1000000000).toFixed(1)+" gigabytes"
+                    if (mountpoints.length > 0) {
+                        txt += qsTr("Mounted as %1").arg(mountpoints.join(", "))
+                    }
+                    return txt;
+                }
+                property string description: model.description
+                property string device: model.device
+                property string size: model.size
+
+                Rectangle {
+                    id: rectBg
+                    radius: 5
+                    anchors.fill: parent
+                    anchors.rightMargin: (sourceList.contentHeight > sourceList.height ? 0 : 30) - radius
+                    anchors.topMargin: 8 - radius
+                    anchors.bottomMargin: 8 - radius
+                    color: "#bdc3c7"
+                    opacity: 0.4
+                    border {
+                        color: "black"
+                        width: 1
+                    }
+
+                }
+
+                Rectangle {
+                    id: rectSelected
+                    anchors.fill: rectBg
+                    radius: rectBg.radius
+                    opacity: 0.4
+                    color: "#f39c00"
+                    visible: mouseOver && parent.ListView.view.currentIndex !== index
+                    property bool mouseOver: false
+                }
+
+                Row {
+                    anchors.fill: parent
+                    width: rectBg.width - (sourceList.contentHeight > sourceList.height ? 0 : 30)
+                    leftPadding: 20
+                    rightPadding: 40
+
+                    Column {
+                        width: 64
+
+                        Image {
+                            source: isUsb ? "icons/ic_usb_40px.svg" : isScsi ? "icons/ic_storage_40px.svg" : "icons/ic_sd_storage_40px.svg"
+                            verticalAlignment: Image.AlignVCenter
+                            height: parent.parent.parent.height
+                            fillMode: Image.Pad
+                        }
+
+                    }
+
+                    Column {
+                        width: parent.width-64
+
+                        Text {
+                            textFormat: Text.StyledText
+                            height: parent.parent.parent.height
+                            verticalAlignment: Text.AlignVCenter
+                            font.family: roboto.name
+                            width: rectBg.width - 64 - (sourceList.contentHeight > sourceList.height ? 0 : 30)
+                            text: {
+                                var sizeStr = (size/1000000000).toFixed(1)+" GB";
+                                var txt;
+                                if (isReadOnly) {
+                                    txt = "<p><font size='4' color='grey'>"+description+" - "+sizeStr+"</font></p>"
+                                    txt += "<font color='grey'>"
+                                    if (mountpoints.length > 0) {
+                                        txt += qsTr("Mounted as %1").arg(mountpoints.join(", "))+" "
+                                    }
+                                    txt += qsTr("[WRITE PROTECTED]")+"</font>"
+                                } else {
+                                    txt = "<p><font size='4'>"+description+" - "+sizeStr+"</font></p>"
+                                    if (mountpoints.length > 0) {
+                                        txt += "<font color='grey'>"+qsTr("Mounted as %1").arg(mountpoints.join(", "))+"</font>"
+                                    }
+                                }
+                                return qsTr(txt);
+                            }
+                            wrapMode: Text.WordWrap
+                        }
+                    }
+                }
+
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+
+                    onEntered: rectSelected.mouseOver = true
+
+                    onExited: rectSelected.mouseOver = false
+
+                    onClicked: {
+                        selectDstItem(model)
+                        btnTarget.text = qsTr("Target (unconfigured)")
+                        btnOs.highlighted = true
+                        btnOs.enabled = true
+                    }
+                }
+            }
+        }
+    }
+
+    Popup {
+        id: ospopup
+        x:50
+        y:25
+        width: parent.width-100
+        height: parent.height-50
+        padding: 0
+        property string categorySelected : ""
+        onClosed: {
+            if (btnOs.text == qsTr("")) {
+                btnOs.text = qsTr("Image Source (unconfigured)")
+                btnTarget.visible = false
+            }
+            osswipeview.currentIndex = 0
+        }
+
+        DropShadow {
+            width: ospopup.width
+            height: ospopup.height
+            anchors.fill: ospopupBody
+            source: ospopupBody
+            horizontalOffset:0
+            verticalOffset: 0
+            radius: ospopupBody.radius
+            samples: 15
+            color: "black"
+        }
+
+        Rectangle {
+            id: ospopupBody
+            color: "#f0f0f0"
+            anchors.fill: parent
+            anchors.rightMargin: - radius
+            anchors.leftMargin: - radius
+            radius: 10
+            Rectangle {
+                id: ospopupMargin
+                color: "#aaa5a6"
+                height: 35
+                width: parent.width
+                radius: parent.radius - 4
+                anchors.topMargin: - radius
+            }
+            Rectangle {
+                y: ospopupMargin.height - height
+                color: ospopupMargin.color
+                height: ospopupMargin.height/2
+                width: parent.width
+            }
+
+            Text {
+                text: "X"
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.rightMargin: 15
+                anchors.topMargin: 10
+                font.bold: true
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        btnOs.text = "IMAGE SOURCE (UNCONFIGURED)"
+                        btnOs.highlighted = true 
+                        ospopup.close()
+                    }
+                }
+            }
+        }
+
+        ColumnLayout {
+            spacing: 10
+
+            Text {
+                text: qsTr("Image source select")
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                Layout.fillWidth: true
+                Layout.topMargin: 10
+                font.family: roboto.name
+                font.bold: true
+            }
+
+            Item {
+                clip: true
+                Layout.preferredWidth: sourceList.width
+                Layout.preferredHeight: sourceList.height
 
                 SwipeView {
                     id: osswipeview
@@ -410,229 +680,527 @@ ApplicationWindow {
                             policy: oslist.contentHeight > oslist.height ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
                         }
                         Keys.onSpacePressed: {
-                            if (currentIndex != -1)
+                            if (currentIndex != -1) {
                                 selectOSitem(model.get(currentIndex), true)
+                            }
                         }
                         Accessible.onPressAction: {
-                            if (currentIndex != -1)
+                            if (currentIndex != -1) {
                                 selectOSitem(model.get(currentIndex), true)
+                            }
                         }
                     }
                 }
             }
         }
-    }
 
-    Component {
-        id: suboslist
+        ListModel {
+            id: osmodel
 
-        ListView {
-            model: ListModel {
-                ListElement {
-                    url: ""
-                    icon: "icons/ic_chevron_left_40px.svg"
-                    extract_size: 0
-                    image_download_size: 0
-                    extract_sha256: ""
-                    contains_multiple_files: false
-                    release_date: ""
-                    subitems_url: "internal://back"
-                    subitems: []
-                    name: qsTr("Back")
-                    description: qsTr("Go back to main menu")
-                    tooltip: ""
+            ListElement {
+                name: qsTr("Configure existing content")
+                icon: "icons/select.png"
+                subitems_url : "internal://configure_existing"
+                description: qsTr("Switch between existing projects located in the BOOT partition")
+            }
+
+            ListElement {
+                url: ""
+                icon: "icons/use_custom.png"
+                name: qsTr("Use custom")
+                description: qsTr("Select a custom .img from your computer")
+            }
+
+            ListElement {
+                url: "internal://format"
+                icon: "icons/erase.png"
+                extract_size: 0
+                image_download_size: 0
+                extract_sha256: ""
+                contains_multiple_files: false
+                skip_format: false
+                release_date: ""
+                subitems_url: ""
+                project_list: ""
+                subitems: []
+                multiple_files: "no"
+                name: qsTr("Erase")
+                description: qsTr("Format card as FAT32")
+                tooltip: ""
+            }
+
+            Component.onCompleted: {
+                if (imageWriter.isOnline()) {
+                    fetchOSlist();
                 }
             }
-
-            currentIndex: -1
-            delegate: osdelegate
-            width: window.width-100
-            height: window.height-100
-            boundsBehavior: Flickable.StopAtBounds
-            highlight: Rectangle { color: "lightsteelblue"; radius: 5 }
-            ScrollBar.vertical: ScrollBar {
-                width: 10
-                policy: parent.contentHeight > parent.height ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
-            }
-            Keys.onSpacePressed: {
-                if (currentIndex != -1)
-                    selectOSitem(model.get(currentIndex))
-            }
-            Accessible.onPressAction: {
-                if (currentIndex != -1)
-                    selectOSitem(model.get(currentIndex))
-            }
-        }
-    }
-
-    ListModel {
-        id: osmodel
-
-        ListElement {
-            url: "internal://format"
-            icon: "icons/erase.png"
-            extract_size: 0
-            image_download_size: 0
-            extract_sha256: ""
-            contains_multiple_files: false
-            release_date: ""
-            subitems_url: ""
-            subitems: []
-            name: qsTr("Erase")
-            description: qsTr("Format card as FAT32")
-            tooltip: ""
         }
 
-        ListElement {
-            url: ""
-            icon: "icons/use_custom.png"
-            name: qsTr("Use custom")
-            description: qsTr("Select a custom .img from your computer")
-        }
+        Component {
+            id: osdelegate
 
-        Component.onCompleted: {
-            if (imageWriter.isOnline()) {
-                fetchOSlist();
-            }
-        }
-    }
+            Item {
+                width: window.width - (oslist.contentHeight > oslist.height ? 120 : 80)
+                height: image_download_size ? 100 : 80
+                Accessible.name: name+".\n"+description
 
-    Component {
-        id: osdelegate
-
-        Item {
-            width: window.width-100
-            height: image_download_size ? 100 : 60
-            Accessible.name: name+".\n"+description
-
-            Rectangle {
-               id: bgrect
-               anchors.fill: parent
-               color: "#f5f5f5"
-               visible: mouseOver && parent.ListView.view.currentIndex !== index
-               property bool mouseOver: false
-            }
-            Rectangle {
-               id: borderrect
-               implicitHeight: 1
-               implicitWidth: parent.width
-               color: "#dcdcdc"
-               y: parent.height
-            }
-
-            Row {
-                leftPadding: 25
-
-                Column {
-                    width: 64
-
-                    Image {
-                        source: icon == "icons/ic_build_48px.svg" ? "icons/cat_misc_utility_images.png": icon
-                        verticalAlignment: Image.AlignVCenter
-                        height: parent.parent.parent.height
-                        fillMode: Image.Pad
-                    }
-                    Text {
-                        text: " "
-//                      visible: !icon
+                Rectangle {
+                    id: rectBg
+                    radius: 5
+                    anchors.fill: parent
+                    anchors.rightMargin: (oslist.contentHeight > oslist.height ? 0 : 30) - radius
+                    anchors.topMargin: 8 - radius
+                    anchors.bottomMargin: 8 - radius
+                    // color: "transparent"
+                    color: "white"
+                    // opacity: 0.4
+                    border {
+                        color: "black"
+                        width: 1
                     }
                 }
-                Column {
-                    width: parent.parent.width-64-50-25
 
-                    Text {
-                        verticalAlignment: Text.AlignVCenter
-                        height: parent.parent.parent.height
-                        font.family: roboto.name
-                        textFormat: Text.RichText
-                        text: {
-                            var txt = "<p style='margin-bottom: 5px;'><b>"+name+"</b></p>"
-                            txt += "<font color='#1a1a1a'>"+description+"</font><font style='font-weight: 200' color='#646464'>"
-                            if (typeof(release_date) == "string" && release_date)
-                                txt += "<br>"+qsTr("Released: %1").arg(release_date)
-                            if (typeof(url) == "string" && url != "" && url != "internal://format") {
-                                if (typeof(extract_sha256) != "undefined" && imageWriter.isCached(url,extract_sha256)) {
-                                    txt += "<br>"+qsTr("Cached on your computer")
-                                } else if (url.startsWith("file://")) {
-                                    txt += "<br>"+qsTr("Local file")
-                                } else {
-                                    txt += "<br>"+qsTr("Online - %1 GB download").arg((image_download_size/1073741824).toFixed(1));
+                Rectangle {
+                    id: rectSelected
+                    anchors.fill: rectBg
+                    radius: rectBg.radius
+                    opacity: 0.4
+                    color: "#f39c00"
+                    visible: mouseOver && parent.ListView.view.currentIndex !== index
+                    property bool mouseOver: false
+                }
+
+                Row {
+                    leftPadding: 25
+                    topPadding: 5
+                    bottomPadding: 5
+
+                    Column {
+                        Image {
+                            source: icon == "icons/ic_build_48px.svg" ? "icons/cat_misc_utility_images.png" : icon
+                            verticalAlignment: Image.AlignVCenter
+                            horizontalAlignment: Image.AlignHCenter
+                            height: parent.parent.parent.height-10
+                            width: parent.parent.parent.height-10
+                            fillMode: {
+                                if (icon) {
+                                    if (icon.includes("http"))
+                                        return Image.Stretch
+                                    else
+                                        return Image.Pad
                                 }
                             }
-                            txt += "</font>";
-
-                            return txt;
                         }
 
-                        /*
-                        Accessible.role: Accessible.ListItem
-                        Accessible.name: name+".\n"+description
-                        Accessible.focusable: true
-                        Accessible.focused: parent.parent.parent.ListView.view.currentIndex === index
-                        */
-
-                        ToolTip {
-                            visible: osMouseArea.containsMouse && typeof(tooltip) == "string" && tooltip != ""
-                            delay: 1000
-                            text: typeof(tooltip) == "string" ? tooltip : ""
-                            clip: false
+                        Text {
+                            text: " "
+                            visible: !icon
                         }
                     }
 
+                    Column {
+                        width: parent.parent.width-64-50-25-10
+                        leftPadding: 10
+
+                        Text {
+                            verticalAlignment: Text.AlignVCenter
+                            height: parent.parent.parent.height
+                            font.family: roboto.name
+                            textFormat: Text.RichText
+                            width: rectBg.width - 64 - 50 - 10 - (oslist.contentHeight > oslist.height ? 0 : 30)
+                            text: {
+                                var txt = "<p style='margin-bottom: 5px;'><b>"+name+"</b></p>"
+                                txt += "<font color='#1a1a1a'>"+description+"</font><font style='font-weight: 200' color='#646464'>"
+                                if (typeof(release_date) == "string" && release_date)
+                                    txt += "<br>"+qsTr("Released: %1").arg(release_date)
+                                if (typeof(url) == "string" && url != "" && url != "internal://format"  && url != "internal://configure_existing") {
+                                    if (typeof(extract_sha256) != "undefined" && imageWriter.isCached(url,extract_sha256)) {
+                                        txt += "<br>"+qsTr("Cached on your computer")
+                                    } else if (url.startsWith("file://")) {
+                                        txt += "<br>"+qsTr("Local file")
+                                    } else {
+                                        txt += "<br>"+qsTr("Online - %1 GB download").arg((image_download_size/1073741824).toFixed(1));
+                                    }
+                                }
+                                txt += "</font>";
+
+                                return txt;
+                            }
+                            wrapMode: Text.WordWrap
+
+                            Accessible.role: Accessible.ListItem
+                            Accessible.name: name+".\n"+description
+                            Accessible.focusable: true
+                            Accessible.focused: parent.parent.parent.ListView.view.currentIndex === index
+
+                            ToolTip {
+                                visible: osMouseArea.containsMouse && typeof(tooltip) == "string" && tooltip != ""
+                                delay: 1000
+                                text: typeof(tooltip) == "string" ? tooltip : ""
+                                clip: false
+                            }
+                        }
+                    }
+                    Column {
+                        Image {
+                            source: "icons/ic_chevron_right_40px.svg"
+                            visible: (typeof(subitems) == "object" && subitems.count) || (typeof(subitems_url) == "string" && subitems_url != "" && subitems_url != "internal://back" && subitems_url != "internal://configure_existing")
+                            verticalAlignment: Image.AlignVCenter
+                            horizontalAlignment: Image.AlignHCenter
+                            height: parent.parent.parent.height
+                            fillMode: Image.Pad
+                        }
+                    }
                 }
-                Column {
-                    Image {
-                        source: "icons/ic_chevron_right_40px.svg"
-                        visible: (typeof(subitems) == "object" && subitems.count) || (typeof(subitems_url) == "string" && subitems_url != "" && subitems_url != "internal://back")
-                        height: parent.parent.parent.height
-                        fillMode: Image.Pad
+
+
+                MouseArea {
+                    id: osMouseArea
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+
+                    onEntered: rectSelected.mouseOver = true
+
+                    onExited: rectSelected.mouseOver = false
+
+                    onClicked: {
+                        selectOSitem(model)
                     }
                 }
             }
+        }
 
-            MouseArea {
-                id: osMouseArea
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                hoverEnabled: true
+        Component {
+            id: suboslist
 
-                onEntered: {
-                    bgrect.mouseOver = true
+            ListView {
+                model: ListModel {
+                    ListElement {
+                        url: ""
+                        icon: "icons/ic_chevron_left_40px.svg"
+                        extract_size: 0
+                        image_download_size: 0
+                        extract_sha256: ""
+                        contains_multiple_files: false
+                        skip_format: false
+                        release_date: ""
+                        project_list: ""
+                        subitems_url: "internal://back"
+                        subitems: []
+                        name: qsTr("Back")
+                        description: qsTr("Go back to main menu")
+                        tooltip: ""
+                    }
                 }
 
-                onExited: {
-                    bgrect.mouseOver = false
+                currentIndex: -1
+                delegate: osdelegate
+                width: window.width-100
+                height: window.height-100
+                boundsBehavior: Flickable.StopAtBounds
+                highlight: Rectangle { color: "lightsteelblue"; radius: 5 }
+                ScrollBar.vertical: ScrollBar {
+                    width: 10
+                    policy: suboslist.contentHeight > suboslist.height ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
                 }
-
-                onClicked: {
-                    selectOSitem(model)
+                Keys.onSpacePressed: {
+                    if (currentIndex != -1) {
+                        selectOSitem(model.get(currentIndex))
+                    }
+                }
+                Accessible.onPressAction: {
+                    if (currentIndex != -1) {
+                        selectOSitem(model.get(currentIndex))
+                    }
                 }
             }
         }
     }
 
-    /*
-      Popup for storage device selection
-     */
     Popup {
-        id: dstpopup
+        id: projectpopup
         x: 50
         y: 25
         width: parent.width-100
         height: parent.height-50
         padding: 0
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        onClosed: imageWriter.stopDriveListPolling()
+        property string categorySelected : ""
 
-        // background of title
+        onClosed: {
+            projswipeview.removeItem(projswipeview.itemAt(5))
+            projswipeview.removeItem(projswipeview.itemAt(4))
+            projswipeview.removeItem(projswipeview.itemAt(3))
+            projswipeview.removeItem(projswipeview.itemAt(2))
+            projswipeview.removeItem(projswipeview.itemAt(1))
+            projswipeview.setCurrentIndex(0);
+        }
+
+        DropShadow {
+            width: projectpopup.width
+            height: projectpopup.height
+            anchors.fill: projectpopupBody
+            source: projectpopupBody
+            horizontalOffset:0
+            verticalOffset: 0
+            radius: projectpopupBody.radius
+            samples: 15
+            color: "black"
+        }
+
         Rectangle {
+            id: projectpopupBody
+            color: "#f0f0f0"
+            anchors.fill: parent
+            anchors.rightMargin: - radius
+            anchors.leftMargin: - radius
+            radius: 10
+            Rectangle {
+                id: projectpopupMargin
+                color: "#aaa5a6"
+                height: 35
+                width: parent.width
+                radius: parent.radius - 4
+                anchors.topMargin: - radius
+            }
+            Rectangle {
+                y: projectpopupMargin.height - height
+                color: projectpopupMargin.color
+                height: projectpopupMargin.height/2
+                width: parent.width
+            }
+
+            Text {
+                text: "X"
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.rightMargin: 15
+                anchors.topMargin: 10
+                font.bold: true
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        projectpopup.close()
+                    }
+                }
+            }
+        }
+
+        ColumnLayout {
+            spacing: 10
+
+            Text {
+                id: targetWindow
+                text: qsTr("Project list")
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                Layout.fillWidth: true
+                Layout.topMargin: 10
+                font.family: roboto.name
+                font.bold: true
+            }
+
+            Item {
+                clip: true
+                Layout.preferredWidth: oslist.width
+                Layout.preferredHeight: oslist.height
+
+                SwipeView {
+                    id: projswipeview
+                    interactive: false
+
+                    ListView {
+                        id: projlist
+                        model: projmodel
+                        currentIndex: -1
+                        delegate: projdelegate
+                        width: window.width-100
+                        height: window.height-100
+                        boundsBehavior: Flickable.StopAtBounds
+                        highlight: Rectangle { color: "lightsteelblue"; radius: 5 }
+                        ScrollBar.vertical: ScrollBar {
+                            width: 10
+                            policy: projlist.contentHeight > projlist.height ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
+                        }
+                    }
+                }
+            }
+        }
+
+        Component {
+            id: subprojlist
+
+            ListView {
+                model: ListModel {
+                    ListElement {
+                        icon: "icons/ic_chevron_left_40px.svg"
+                        name: "BACK"
+                        type: "back"
+                        description: ""
+                        platforms: []
+                        architectures: []
+                        boards: []
+                        platform: ""
+                        architecture: ""
+                        board: ""
+                        kernel: ""
+                        preloader: ""
+                        files: []
+                    }
+                }
+
+                currentIndex: -1
+                delegate: projdelegate
+                width: window.width-100
+                height: window.height-100
+                boundsBehavior: Flickable.StopAtBounds
+                highlight: Rectangle { color: "lightsteelblue"; radius: 5 }
+                ScrollBar.vertical: ScrollBar {
+                    width: 10
+                    policy: parent.contentHeight > parent.height ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
+                }
+            }
+        }
+
+        ListModel {
+            id: projmodel
+
+            ListElement {
+                icon: "icons/rpi.png"
+                name: "rpi"
+                description: "Raspberry PI"
+                type: "platforms"
+                platform: ""
+                architecture: ""
+                board: ""
+                kernel: ""
+                preloader: ""
+                files: []
+            }
+
+            ListElement {
+                icon: "icons/xilinx.png"
+                name: "xilinx"
+                description: "Xilinx"
+                type: "platforms"
+            }
+
+            ListElement {
+                icon: "icons/intel.png"
+                name: "intel"
+                description: "Intel"
+                type: "platforms"
+            }
+        }
+
+        Component {
+            id: projdelegate
+
+            Item {
+                width: window.width-100
+                height: 70
+
+                Rectangle {
+                    id: projbgrect
+                    radius: 5
+                    anchors.fill: parent
+                    anchors.rightMargin: 30
+                    anchors.topMargin: 8 - radius
+                    anchors.bottomMargin: 8 - radius
+                    color: "transparent"
+                    opacity: 0.4
+                    border {
+                        color: "black"
+                        width: 1
+                    }
+
+                }
+
+                Rectangle {
+                    id: rectSelected
+                    anchors.fill: projbgrect
+                    radius: projbgrect.radius
+                    opacity: 0.4
+                    color: "#f39c00"
+                    visible: mouseOver && parent.ListView.view.currentIndex !== index
+                    property bool mouseOver: false
+                }
+
+                Row {
+                    leftPadding: 25
+
+                    Column {
+                        width: 64
+                        topPadding: 5
+                        bottomPadding: 5
+
+                        Image {
+                            source: icon ? icon : "icons/adi.png"
+                            verticalAlignment: Image.AlignVCenter
+                            horizontalAlignment: Image.AlignHCenter
+                            height: parent.parent.parent.height-10
+                        }
+                    }
+                    Column {
+                        width: parent.parent.width
+
+                        Text {
+                            textFormat: Text.StyledText
+                            height: parent.parent.parent.height
+                            verticalAlignment: Text.AlignVCenter
+                            horizontalAlignment: Text.AlignHCenter
+                            font.family: roboto.name
+                            text: {
+                                var txt ="<b>"+name+"</b>";
+                                return txt;
+                            }
+                        }
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+
+                    onEntered: {
+                        rectSelected.mouseOver = true
+                    }
+
+                    onExited: {
+                        rectSelected.mouseOver = false
+                    }
+
+                    onClicked: {
+                        selectProj(model)
+                    }
+                }
+            }
+        }
+    }
+
+    Popup {
+        id: writeActionPopup
+        x: 75
+        y: (parent.height-height)/2
+        width: parent.width-150
+        height: writeActionPopupbody.implicitHeight+150
+        padding: 0
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        Rectangle {
+            radius: 10
             color: "#f5f5f5"
             anchors.right: parent.right
             anchors.top: parent.top
             height: 35
             width: parent.width
+            visible: false
         }
-        // line under title
+
         Rectangle {
             color: "#afafaf"
             width: parent.width
@@ -653,149 +1221,77 @@ ApplicationWindow {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                    dstpopup.close()
+                    writeActionPopup.close()
                 }
             }
         }
 
         ColumnLayout {
-            spacing: 10
+            spacing: 20
+            anchors.fill: parent
 
             Text {
-                text: qsTr("Storage")
+                id: writeActionPopupheader
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 Layout.fillWidth: true
                 Layout.topMargin: 10
                 font.family: roboto.name
                 font.bold: true
+                text: "Warning"
             }
 
-            Item {
-                clip: true
-                Layout.preferredWidth: dstlist.width
-                Layout.preferredHeight: dstlist.height
+            Text {
+                id: writeActionPopupbody
+                font.pointSize: 12
+                wrapMode: Text.Wrap
+                textFormat: Text.StyledText
+                font.family: roboto.name
+                Layout.maximumWidth: writeActionPopup.width-50
+                Layout.fillHeight: true
+                Layout.leftMargin: 25
+                Layout.topMargin: 25
+                text: qsTr("Storage: <b>%1</b> conains a Kuiper project list.<br> Do you want to configure the current content?.").arg(btnStorage.text)
+                Accessible.name: text.replace(/<\/?[^>]+(>|$)/g, "")
+            }
 
-                ListView {
-                    id: dstlist
-                    model: driveListModel
-                    delegate: dstdelegate
-                    width: window.width-100
-                    height: window.height-100
-                    boundsBehavior: Flickable.StopAtBounds
-                    highlight: Rectangle { color: "lightsteelblue"; radius: 5 }
-                    ScrollBar.vertical: ScrollBar {
-                        width: 10
-                        policy: dstlist.contentHeight > dstlist.height ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
+            RowLayout {
+                Layout.alignment: Qt.AlignCenter | Qt.AlignBottom
+                Layout.bottomMargin: 10
+                spacing: 20
+
+                Button {
+                    text: qsTr("No")
+                    onClicked: {
+                        writeActionPopup.close()
                     }
+                    Material.foreground: "#ffffff"
+                    Material.background: "#c51a4a"
+                    font.family: roboto.name
+                    visible: true
+                    Accessible.onPressAction: clicked()
+                }
 
-                    Keys.onSpacePressed: {
-                        if (currentIndex == -1)
-                            return
-                        selectDstItem(currentItem)
+                Button {
+                    text: qsTr("Yes")
+                    onClicked: {
+                        writeActionPopup.close()
+                        btnOs.text = qsTr("CONFIGURE EXISTING CONTENT");
+                        imageWriter.setProjectListUrl("")
+                        btnOs.highlighted = false;
+                        btnTarget.highlighted = true;
+                        btnTarget.visible = true;
+                        btnTarget.enabled = true;
+                        ospopup.close();
+
                     }
-                    Accessible.onPressAction: {
-                        if (currentIndex == -1)
-                            return
-                        selectDstItem(currentItem)
-                    }
+                    Material.foreground: "#ffffff"
+                    Material.background: "#c51a4a"
+                    font.family: roboto.name
+                    visible: true
+                    Accessible.onPressAction: clicked()
                 }
-            }
-        }
-    }
-
-    Component {
-        id: dstdelegate
-
-        Item {
-            width: window.width-100
-            height: 60
-            Accessible.name: {
-                var txt = description+" - "+(size/1000000000).toFixed(1)+" gigabytes"
-                if (mountpoints.length > 0) {
-                    txt += qsTr("Mounted as %1").arg(mountpoints.join(", "))
-                }
-                return txt;
-            }
-            property string description: model.description
-            property string device: model.device
-            property string size: model.size
-
-            Rectangle {
-               id: dstbgrect
-               anchors.fill: parent
-               color: "#f5f5f5"
-               visible: mouseOver && parent.ListView.view.currentIndex !== index
-               property bool mouseOver: false
-
-            }
-            Rectangle {
-               id: dstborderrect
-               implicitHeight: 1
-               implicitWidth: parent.width
-               color: "#dcdcdc"
-               y: parent.height
-            }
-
-            Row {
-                leftPadding: 25
-
-                Column {
-                    width: 64
-
-                    Image {
-                        source: isUsb ? "icons/ic_usb_40px.svg" : isScsi ? "icons/ic_storage_40px.svg" : "icons/ic_sd_storage_40px.svg"
-                        verticalAlignment: Image.AlignVCenter
-                        height: parent.parent.parent.height
-                        fillMode: Image.Pad
-                    }
-                }
-                Column {
-                    width: parent.parent.width-64
-
-                    Text {
-                        textFormat: Text.StyledText
-                        height: parent.parent.parent.height
-                        verticalAlignment: Text.AlignVCenter
-                        font.family: roboto.name
-                        text: {
-                            var sizeStr = (size/1000000000).toFixed(1)+" GB";
-                            var txt;
-                            if (isReadOnly) {
-                                txt = "<p><font size='4' color='grey'>"+description+" - "+sizeStr+"</font></p>"
-                                txt += "<font color='grey'>"
-                                if (mountpoints.length > 0) {
-                                    txt += qsTr("Mounted as %1").arg(mountpoints.join(", "))+" "
-                                }
-                                txt += qsTr("[WRITE PROTECTED]")+"</font>"
-                            } else {
-                                txt = "<p><font size='4'>"+description+" - "+sizeStr+"</font></p>"
-                                if (mountpoints.length > 0) {
-                                    txt += "<font color='grey'>"+qsTr("Mounted as %1").arg(mountpoints.join(", "))+"</font>"
-                                }
-                            }
-                            return txt;
-                        }
-                    }
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                hoverEnabled: true
-
-                onEntered: {
-                    dstbgrect.mouseOver = true
-                }
-
-                onExited: {
-                    dstbgrect.mouseOver = false
-                }
-
-                onClicked: {
-                    selectDstItem(model)
-                }
+                Text { text: " " }
             }
         }
     }
@@ -810,7 +1306,7 @@ ApplicationWindow {
         yesButton: true
         noButton: true
         title: qsTr("Are you sure you want to quit?")
-        text: qsTr("Raspberry Pi Imager is still busy.<br>Are you sure you want to quit?")
+        text: qsTr("Kuiper Imager is still busy.<br>Are you sure you want to quit?")
         onYes: {
             Qt.quit()
         }
@@ -823,24 +1319,26 @@ ApplicationWindow {
         noButton: true
         title: qsTr("Warning")
         onYes: {
-            writebutton.enabled = false
-            cancelwritebutton.enabled = true
-            cancelwritebutton.visible = true
+            btnWrite.enabled = false
+            btnWrite.visible = false
+            cancelbtnWrite.enabled = true
+            cancelbtnWrite.visible = true
             cancelverifybutton.enabled = true
             progressText.text = qsTr("Preparing to write...");
             progressText.visible = true
             progressBar.visible = true
             progressBar.indeterminate = true
             progressBar.Material.accent = "#ffffff"
-            osbutton.enabled = false
-            dstbutton.enabled = false
+            btnOs.enabled = false
+            btnStorage.enabled = false
             imageWriter.setVerifyEnabled(true)
             imageWriter.startWrite()
+
         }
 
         function askForConfirmation()
         {
-            text = qsTr("All existing data on '%1' will be erased.<br>Are you sure you want to continue?").arg(dstbutton.text)
+            text = qsTr("All existing data on '%1' will be erased.<br>Are you sure you want to continue?").arg(btnStorage.text)
             openPopup()
         }
     }
@@ -928,8 +1426,8 @@ ApplicationWindow {
         }
 
         if (progressBar.value !== newPos) {
-            if (cancelwritebutton.visible) {
-                cancelwritebutton.visible = false
+            if (cancelbtnWrite.visible) {
+                cancelbtnWrite.visible = false
                 cancelverifybutton.visible = true
             }
 
@@ -946,14 +1444,21 @@ ApplicationWindow {
         progressText.text = qsTr("Preparing to write... (%1)").arg(msg)
     }
 
-    function resetWriteButton() {
-        progressText.visible = false
+    function resetbtnWrite() {
+        btnStorage.text = qsTr("Storage (unconfigured)")
+        btnStorage.enabled = true
+        btnOs.text = qsTr("Image Source (unconfigured)")
+        btnTarget.highlighted = true
+        btnTarget.text = "TARGET (UNCONFIGURED)"
+        btnTarget.visible = false
+        btnOs.enabled = false
         progressBar.visible = false
-        osbutton.enabled = true
-        dstbutton.enabled = true
-        writebutton.visible = true
-        writebutton.enabled = imageWriter.readyToWrite()
-        cancelwritebutton.visible = false
+        btnStorage.enabled = true
+        progressText.visible = false
+        progressText.text = qsTr("")
+        btnWrite.visible = true
+        btnWrite.enabled = imageWriter.readyToWrite()
+        cancelbtnWrite.visible = false
         cancelverifybutton.visible = false
     }
 
@@ -961,37 +1466,55 @@ ApplicationWindow {
         msgpopup.title = qsTr("Error")
         msgpopup.text = msg
         msgpopup.openPopup()
-        resetWriteButton()
+        resetbtnWrite()
+        storagePopup.close()
+        ospopup.close()
+        projectpopup.close()
     }
 
     function onSuccess() {
         msgpopup.title = qsTr("Write Successful")
-        if (osbutton.text === qsTr("Erase"))
-            msgpopup.text = qsTr("<b>%1</b> has been erased<br><br>You can now remove the SD card from the reader").arg(dstbutton.text)
-        else
-            msgpopup.text = qsTr("<b>%1</b> has been written to <b>%2</b><br><br>You can now remove the SD card from the reader").arg(osbutton.text).arg(dstbutton.text)
+        if (btnOs.text === qsTr("Erase")) {
+            msgpopup.text = qsTr("<b>%1</b> has been erased<br><br>You can now remove the SD card from the reader").arg(btnStorage.text)
+            imageWriter.setDst("")
+            resetbtnWrite()
+        } else {
+            msgpopup.text = qsTr("<b>%1</b> has been written to <b>%2</b>").arg(btnOs.text).arg(btnStorage.text)
+            if (btnOs.text.toLowerCase().includes("kuiper")) {
+                progressText.visible = false
+                progressText.text = qsTr("")
+                btnWrite.enabled = imageWriter.readyToWrite()
+                cancelverifybutton.visible = false
+                progressBar.visible = false
+                btnStorage.enabled = true
+                cancelbtnWrite.visible = false
+                btnOs.enabled = true
+            } else {
+                imageWriter.setDst("")
+                resetbtnWrite()
+            }
+        }
         if (imageWriter.isEmbeddedMode()) {
             msgpopup.continueButton = false
             msgpopup.quitButton = true
         }
-
+        btnWrite.visible = true
+        btnTarget.enabled = true
         msgpopup.openPopup()
-        imageWriter.setDst("")
-        dstbutton.text = qsTr("CHOOSE STORAGE")
-        resetWriteButton()
     }
 
     function onFileSelected(file) {
         imageWriter.setSrc(file)
-        osbutton.text = imageWriter.srcFileName()
+        btnOs.text = imageWriter.srcFileName()
         ospopup.close()
         if (imageWriter.readyToWrite()) {
-            writebutton.enabled = true
+            btnOs.highlighted = false
+            btnWrite.enabled = true
         }
     }
 
     function onCancelled() {
-        resetWriteButton()
+        resetbtnWrite()
     }
 
     function onFinalizing() {
@@ -1022,10 +1545,12 @@ ApplicationWindow {
         httpRequest(imageWriter.constantOsListUrl(), function (x) {
             var o = JSON.parse(x.responseText)
             var oslist = oslistFromJson(o)
-            if (oslist === false)
+            if (oslist === false){
                 return
+            }
+
             for (var i in oslist) {
-                osmodel.insert(osmodel.count-2, oslist[i])
+                osmodel.insert(osmodel.count-3, oslist[i])
             }
 
             if ("imager" in o) {
@@ -1037,52 +1562,6 @@ ApplicationWindow {
                     }
                 }
             }
-        })
-    }
-
-    function projlistFromJson(o) {
-        if (!"proj_list" in o) {
-            onError(qsTr("Error parsing proj_list.json"))
-            return false
-        }
-
-        return o["proj_list"]
-    }
-
-    function fetchProjlist() {
-        httpRequest(imageWriter.constantProjListUrl(), function (x) {
-            var o = JSON.parse(x.responseText)
-            var projlist = projlistFromJson(o)
-            if (projlist === false)
-                return
-
-            for (var i in projlist) {
-                platform_model.append({"name" : projlist[i].name})
-            }
-            platform.currentIndex = 0
-        })
-    }
-
-    function isArray(what) {
-        return Object.prototype.toString.call(what) === '[object Array]';
-    }
-
-    function selectPlatform() {
-        httpRequest(imageWriter.constantProjListUrl(), function (x) {
-            var o = JSON.parse(x.responseText)
-            var projlist = projlistFromJson(o)
-
-            project_model.clear()
-
-            if (isArray(projlist[platform.currentIndex].project)) {
-                for (var i in projlist[platform.currentIndex].project) {
-                    project_model.append({"project" : projlist[platform.currentIndex].project[i]})
-                }
-            } else {
-                project_model.append({"project" : projlist[platform.currentIndex].project})
-            }
-
-            project.currentIndex = 0
         })
     }
 
@@ -1103,8 +1582,9 @@ ApplicationWindow {
         return m
     }
 
-    function selectOSitem(d, selectFirstSubitem)
-    {
+    function selectOSitem(d, selectFirstSubitem) {
+        var url = d.project_list
+        btnTarget.visible = false
         if (typeof(d.subitems) == "object" && d.subitems.count) {
             var m = newSublist()
 
@@ -1121,6 +1601,17 @@ ApplicationWindow {
             {
                 osswipeview.decrementCurrentIndex()
                 ospopup.categorySelected = ""
+                btnOs.text = ""
+            }
+            else if (d.subitems_url === "internal://configure_existing")
+            {
+                btnOs.text = qsTr("CONFIGURE EXISTING CONTENT")
+                btnOs.highlighted = false
+                btnTarget.text = qsTr("TARGET (UNCONFIGURED)")
+                btnTarget.highlighted = true
+                btnTarget.visible = true
+                btnTarget.enabled = true
+                ospopup.close()
             }
             else
             {
@@ -1140,6 +1631,7 @@ ApplicationWindow {
 
                 osswipeview.itemAt(osswipeview.currentIndex+1).currentIndex = (selectFirstSubitem === true) ? 0 : -1
                 osswipeview.incrementCurrentIndex()
+                btnOs.text += d.name + " : "
             }
         } else if (d.url === "") {
             if (!imageWriter.isEmbeddedMode()) {
@@ -1162,26 +1654,169 @@ ApplicationWindow {
                 }
             }
         } else {
-            imageWriter.setSrc(d.url, d.image_download_size, d.extract_size, typeof(d.extract_sha256) != "undefined" ? d.extract_sha256 : "", typeof(d.contains_multiple_files) != "undefined" ? d.contains_multiple_files : false, ospopup.categorySelected, d.name)
-            osbutton.text = d.name
+            imageWriter.setSrc(d.url, d.image_download_size, d.extract_size, typeof(d.extract_sha256) != "undefined" ? d.extract_sha256 : "", typeof(d.contains_multiple_files) != "undefined" ? d.contains_multiple_files : false, typeof(d.skip_format) != "undefined" ? d.skip_format : false, ospopup.categorySelected, d.name)
+            btnOs.text += d.name
             ospopup.close()
-            if (imageWriter.readyToWrite()) {
-                writebutton.enabled = true
+            if (typeof(d.project_list) != "undefined") {
+                imageWriter.setProjectListUrl(d.project_list)
+                btnTarget.text = qsTr("TARGET (UNCONFIGURED)")
+                btnTarget.highlighted = true
+                if (d.url != qsTr("internal://format"))
+                    btnTarget.visible = true
             }
+            if (imageWriter.readyToWrite()) {
+                btnOs.highlighted = false
+            }
+            if (btnOs.text != qsTr("CONFIGURE EXISTING CONTENT"))
+                btnWrite.enabled = true
         }
     }
 
     function selectDstItem(d) {
+        storagePopup.close()
         if (d.isReadOnly) {
             onError(qsTr("SD card is write protected.<br>Push the lock switch on the left side of the card upwards, and try again."))
             return
         }
 
-        dstpopup.close()
-        imageWriter.setDst(d.device, d.size)
-        dstbutton.text = d.description
-        if (imageWriter.readyToWrite()) {
-            writebutton.enabled = true
+        imageWriter.setDst(d.device, d.size, d.mountpoints)
+        btnOs.text = qsTr("Image Source (unconfigured)")
+        btnTarget.text = qsTr("TARGET (UNCONFIGURED)")
+        btnTarget.visible = false
+        btnStorage.text = d.description
+
+        btnOs.enabled = true;
+        if (imageWriter.hasKuiper())
+            writeActionPopup.open()
+    }
+
+    function selectProj(item) {
+
+        switch (item.type) {
+
+            case "platforms":
+                var archlist
+                var listurl = imageWriter.getProjectListUrl()
+                if (listurl != "") {
+                    httpRequest(listurl, function (x) {
+                        var list = JSON.parse(x.responseText)
+                        var platformlist = list.platforms
+                        for (var i in platformlist) {
+                            if (platformlist[i].name == item.name){
+                                archlist = platformlist[i]["architectures"]
+                            }
+                        }
+                        var newlist = subprojlist.createObject(projswipeview)
+                        projswipeview.addItem(newlist)
+                        var sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
+                        for (var i in archlist){
+                            archlist[i].type = "architectures"
+                            sublist.append(archlist[i])
+                        }
+                        imageWriter.setProjectSearch(item.name,0)
+                        projswipeview.incrementCurrentIndex()
+                    })
+                } else if (imageWriter.hasKuiper()) {
+                    archlist = JSON.parse(imageWriter.getPlatformList(item.name))
+                    var newlist = subprojlist.createObject(projswipeview)
+                    projswipeview.addItem(newlist)
+                    var sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
+                    for (var i in archlist){
+                        archlist[i].type = "architectures"
+                        sublist.append(archlist[i])
+                    }
+                    imageWriter.setProjectSearch(item.name,0)
+                    projswipeview.incrementCurrentIndex()
+                } else {
+                    onError("fail")
+                }
+
+                btnTarget.text = item.name + ": "
+
+                break;
+            case "architectures":
+                var newlist = subprojlist.createObject(projswipeview)
+                projswipeview.addItem(newlist)
+                var sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
+                for (i = 0; i < item.boards.count; i++) {
+                    var it = item.boards.get(i)
+                    sublist.append(it)
+                }
+                imageWriter.setProjectSearch(item.name,1)
+                btnTarget.text += item.name + ": "
+                projswipeview.incrementCurrentIndex()
+                break;
+
+            case "project":
+                var filelist = "";
+                for (i = 0; i < item.files.count; i++) {
+                    filelist+=item.files.get(i).path
+                    if (i != item.files.count - 1)
+                        filelist+='%'
+                }
+                btnWrite.enabled = true
+                btnTarget.text += item.name
+                btnTarget.highlighted  = false
+                imageWriter.setProjectFiles(item.kernel, item.preloader, filelist)
+                projswipeview.removeItem(projswipeview.itemAt(5))
+                projswipeview.removeItem(projswipeview.itemAt(4))
+                projswipeview.removeItem(projswipeview.itemAt(3))
+                projswipeview.removeItem(projswipeview.itemAt(2))
+                projswipeview.removeItem(projswipeview.itemAt(1))
+                projectpopup.close()
+                break
+
+            case "back":
+                var model = projswipeview.itemAt(projswipeview.currentIndex).model
+                model.remove(1, model.count-1)
+                projswipeview.decrementCurrentIndex()
+
+                break
+
+            default:
+                var newlist = subprojlist.createObject(projswipeview)
+                projswipeview.addItem(newlist)
+                var sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
+                imageWriter.setProjectSearch(item.name,2)
+
+                var listurl = imageWriter.getProjectListUrl()
+                if (listurl != "") {
+                    httpRequest(listurl, function (x) {
+                        var list = JSON.parse(x.responseText)
+                        var projlist = list.projects
+                        for (var i in projlist) {
+                            if (projlist[i].platform == imageWriter.getProjectSearch(0) &&
+                                projlist[i].architecture == imageWriter.getProjectSearch(1) &&
+                                projlist[i].board == imageWriter.getProjectSearch(2)){
+                                projlist[i].type = "project";
+                                sublist.append(projlist[i])
+                            }
+                        }
+
+                    })
+
+                } else if (imageWriter.hasKuiper()) {
+                    var projlist = JSON.parse(imageWriter.getProjectList())
+                    for (var i in projlist) {
+                        projlist[i].type = "project";
+                        sublist.append(projlist[i])
+
+                    }
+                } else {
+                        onError("FAIL")
+                }
+
+
+                btnTarget.text += item.name + ": "
+
+                projswipeview.incrementCurrentIndex()
+                break;
         }
     }
 }
+
+/*##^##
+Designer {
+    D{i:0;formeditorZoom:1.1;height:440;width:640}
+}
+##^##*/
