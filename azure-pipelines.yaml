@@ -37,13 +37,13 @@ jobs:
         displayName: Update MSYS2
 
       - script: >-
-          %MSYS2BASH% -lc "pacman --noconfirm -Sy git make mingw-w64-cross-binutils mingw-w64-i686-{toolchain,cmake,make,ninja,qt5-base,qt5-winextras,qt5,qt5-3d,gdb,mesa,qt-creator}"
+          %MSYS2BASH% -lc "pacman --noconfirm -Sy git make mingw-w64-cross-binutils mingw-w64-i686-{toolchain,cmake,make,ninja,qt5-base,qt5-winextras,qt5,qt5-3d,gdb,mesa,qt-creator,qt5-quickcontrols2}"
         displayName: Install deps
 
       - script: >-
           %MSYS2BASH% -lc "
           mkdir -p build/deploy &&
-          cp %MSYS2%/mingw32/bin/{libbrotlicommon.dll,libbrotlidec.dll,libbrotlienc.dll,libdouble-conversion.dll,libfreetype-6.dll,libglib-2.0-0.dll,libgraphite2.dll,libharfbuzz-0.dll,libicudt69.dll,libicuin69.dll,libicuuc69.dll,libintl-8.dll,liblzma-5.dll,libmd4c.dll,libpcre-1.dll,libpcre2-16-0.dll,libpng16-16.dll,zlib1.dll,libbz2-1.dll,libiconv-2.dll,liblz4.dll,libxml2-2.dll,libzstd.dll,libgcc_s_dw2-1.dll,libstdc++-6.dll,libwinpthread-1.dll} build/deploy"
+          cp %MSYS2%/mingw32/bin/{libb2-1.dll,libbrotlicommon.dll,libbrotlidec.dll,libbrotlienc.dll,libdouble-conversion.dll,libfreetype-6.dll,libglib-2.0-0.dll,libgraphite2.dll,libharfbuzz-0.dll,libicu*.dll,libintl-8.dll,liblzma-5.dll,libmd4c.dll,libpcre*.dll,libpcre2-16-0.dll,libpng16-16.dll,zlib1.dll,libbz2-1.dll,libiconv-2.dll,liblz4.dll,libxml2-2.dll,libzstd.dll,libgcc_s_dw2-1.dll,libstdc++-6.dll,libwinpthread-1.dll} build/deploy"
         env:
           CHERE_INVOKING: yes
         displayName: Setup deploy libs
