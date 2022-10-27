@@ -1,6 +1,8 @@
 trigger:
   - qml
   - dev/*
+  - ci-*
+  - main
 
 jobs:
   - job: "Ubuntu"
