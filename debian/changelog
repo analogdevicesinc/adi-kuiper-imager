@@ -1,3 +1,9 @@
+kuiper-imager (1.0.0~rc1) unstable; urgency=medium
+
+  * Prepare the first ADI kuiper-imager release candidate based on rpi-imager 1.6.1
+
+ -- Alexandra Trifan <alexandra.trifan@analog.com>  Fri, 04 Nov 2022 13:04:54 +0200
+
 kuiper-imager (1.6.2) unstable; urgency=medium
 
   * Initial ADI kuiper-imager relase based on rpi-imager 1.6.1

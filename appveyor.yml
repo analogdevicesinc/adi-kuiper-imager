@@ -46,7 +46,7 @@ for:
         - '"C:\Program Files (x86)\NSIS\makensis.exe" C:\adi-kuiper-imager\build\kuiper-imager.nsi'
       
       after_build:  
-        - ps: Push-AppveyorArtifact "C:\adi-kuiper-imager\build\imager-1.6.2.exe"
+        - ps: Push-AppveyorArtifact "C:\adi-kuiper-imager\build\imager*.exe"
     -
       matrix:
         only:
