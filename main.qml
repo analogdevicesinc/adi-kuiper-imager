@@ -1251,7 +1251,7 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 Layout.leftMargin: 25
                 Layout.topMargin: 25
-                text: qsTr("Storage: <b>%1</b> conains a Kuiper project list.<br> Do you want to configure the current content?.").arg(btnStorage.text)
+                text: qsTr("Storage: <b>%1</b> contains a Kuiper project list.<br> Do you want to configure the current content?").arg(btnStorage.text)
                 Accessible.name: text.replace(/<\/?[^>]+(>|$)/g, "")
             }
 
