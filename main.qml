@@ -1792,7 +1792,9 @@ ApplicationWindow {
                     imageWriter.setProjectSearch(item.name,0)
                     projswipeview.incrementCurrentIndex()
                 } else {
-                    onError("fail")
+                    onError("Can't configure selected platform. 
+                    \nJSON file not found on BOOT partition.\n
+                    JSON file not found online.")
                 }
 
                 btnTarget.text = item.name + ": "
@@ -1867,9 +1869,10 @@ ApplicationWindow {
 
                     }
                 } else {
-                        onError("FAIL")
+                        onError("Can't configure list of supported projects. 
+                    \nJSON file not found on BOOT partition.\n
+                    JSON file not found online.")
                 }
-
 
                 btnTarget.text += item.name + ": "
 
