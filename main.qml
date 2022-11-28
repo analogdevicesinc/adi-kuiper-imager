@@ -110,6 +110,10 @@ ApplicationWindow {
                         target: btnTarget;
                         enabled: false;
                     }
+                    PropertyChanges {
+                        target: btnStorage;
+                        state: "not_selected"
+                    }
                 },
                 State {
                     name: "storage_ok"
@@ -125,6 +129,11 @@ ApplicationWindow {
                         target: btnTarget;
                         enabled: true;
                     }
+                    PropertyChanges {
+                        target: btnStorage;
+                        state: "selected"
+                    }
+                }
             ]
 
             ColumnLayout {
@@ -142,7 +151,6 @@ ApplicationWindow {
                 Button {
                     id: btnStorage
                     height: 40
-                    text: qsTr("Storage (unconfigured)")
                     Layout.rightMargin: 0
                     Layout.bottomMargin: 0
                     Layout.leftMargin: 0
@@ -153,10 +161,30 @@ ApplicationWindow {
                     transformOrigin: Item.Center
                     Layout.fillHeight: true
                     Layout.preferredHeight: -1
-                    highlighted: (btnStorage.text == qsTr("Storage (unconfigured)")) ? true : false
-                    Material.background: btnStorage.highlighted ? Material.Pink : "#2ecc71"
+                    highlighted: true
                     Layout.fillWidth: true
                     clip: true
+
+                    states : [
+                        State {
+                            name: "not_selected"
+                            PropertyChanges {
+                                target: btnStorage
+                                text: qsTr("Storage (unconfigured)")
+                                highlighted: true
+                                Material.background: btnStorage.highlighted ? Material.Pink : "#2ecc71"
+                            }
+                        },
+                        State {
+                            name: "selected"
+                            PropertyChanges {
+                                target: btnStorage
+                                highlighted: false
+                                Material.background: btnStorage.highlighted ? Material.Pink : "#2ecc71"
+                            }
+                        }
+                    ]
+                    state: "not_selected"
 
                     ToolTip.delay: 300
                     ToolTip.timeout: 5000
@@ -1718,6 +1746,7 @@ ApplicationWindow {
         btnOs.text = qsTr("Image Source (UNCONFIGURED)")
         btnTarget.text = qsTr("Target (UNCONFIGURED)")
         btnTarget.visible = false
+        btnStorage.state = "selected"
         btnStorage.text = d.description
 
         controls.state ="storage_ok";
