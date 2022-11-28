@@ -175,7 +175,7 @@ QString ImageWriter::_getsStorageInfo(QString name, QString type)
 
 bool ImageWriter::hasKuiper()
 {
-    QString boot = _getsStorageInfo("BOOT", "path"), info;
+    QString boot = _getsStorageInfo("BOOT", "path");
     QFile osinfo;
 
     if (boot == "")
@@ -465,7 +465,7 @@ QByteArray ImageWriter::getPlatformList(QString name)
 
     foreach (const QJsonValue &value, projectList["platforms"].toArray()) {
         QJsonObject local = value.toObject();
-        if (local["name"].toString() == name)
+	if (local["platform"].toString() == name)
             return QJsonDocument(local["architectures"].toArray()).toJson();
     }
     return 0;
