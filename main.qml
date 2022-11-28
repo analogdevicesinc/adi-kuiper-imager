@@ -506,20 +506,26 @@ ApplicationWindow {
                             policy: sourceList.contentHeight > sourceList.height ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
                         }
                         Keys.onSpacePressed: {
-                            if (currentIndex == -1)
+                            if (currentIndex == -1) {
                                 return
+                            }
                             selectDstItem(currentItem)
                             btnTarget.text = qsTr("Target (unconfigured)")
                             btnOs.highlighted = true
                             btnOs.enabled = true
                         }
                         Accessible.onPressAction: {
-                            if (currentIndex == -1)
+                            if (currentIndex == -1) {
                                 return
+                            }
                             selectDstItem(currentItem)
                             btnTarget.text = qsTr("Target (unconfigured)")
+
                             btnOs.highlighted = true
                             btnOs.enabled = true
+                        }
+                        Connections {
+                            target: driveListModel;
                         }
                     }
                 }
@@ -1102,14 +1108,14 @@ ApplicationWindow {
                     ListElement {
                         icon: "icons/ic_chevron_left_40px.svg"
                         name: "BACK"
-                        type: "back"
+                        type: "BACK"
                         description: ""
                         platforms: []
                         architectures: []
                         boards: []
                         platform: ""
-                        architecture: ""
-                        board: ""
+                        architecture: "BACK"
+                        board: "BACK"
                         kernel: ""
                         preloader: ""
                         files: []
@@ -1218,7 +1224,15 @@ ApplicationWindow {
                             horizontalAlignment: Text.AlignHCenter
                             font.family: roboto.name
                             text: {
-                                var txt ="<b>"+name+"</b>";
+                                var txt ="<b>";
+                                if (type == "architectures") {
+                                    txt += architecture;
+                                } else if (type == "boards") {
+                                    txt += board;
+                                } else {
+                                    txt += name;
+                                }
+                                txt += "</b>";
                                 return txt;
                             }
                         }
@@ -1397,7 +1411,6 @@ ApplicationWindow {
             btnStorage.enabled = false
             imageWriter.setVerifyEnabled(true)
             imageWriter.startWrite()
-
         }
 
         function askForConfirmation()
@@ -1748,16 +1761,13 @@ ApplicationWindow {
         btnTarget.visible = false
         btnStorage.state = "selected"
         btnStorage.text = d.description
-
         controls.state ="storage_ok";
         if (imageWriter.hasKuiper())
             writeActionPopup.open()
     }
 
     function selectProj(item) {
-
         switch (item.type) {
-
             case "platforms":
                 var archlist
                 var listurl = imageWriter.getProjectListUrl()
@@ -1766,7 +1776,7 @@ ApplicationWindow {
                         var list = JSON.parse(x.responseText)
                         var platformlist = list.platforms
                         for (var i in platformlist) {
-                            if (platformlist[i].name == item.name){
+                            if (platformlist[i].platform == item.name){
                                 archlist = platformlist[i]["architectures"]
                             }
                         }
@@ -1805,11 +1815,12 @@ ApplicationWindow {
                 projswipeview.addItem(newlist)
                 var sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
                 for (i = 0; i < item.boards.count; i++) {
-                    var it = item.boards.get(i)
+                    var it = JSON.parse(JSON.stringify(item.boards.get(i)));
+                    it.type = "boards"
                     sublist.append(it)
                 }
-                imageWriter.setProjectSearch(item.name,1)
-                btnTarget.text += item.name + ": "
+                imageWriter.setProjectSearch(item.architecture,1)
+                btnTarget.text += item.architecture + ": "
                 projswipeview.incrementCurrentIndex()
                 break;
 
@@ -1832,7 +1843,7 @@ ApplicationWindow {
                 projectpopup.close()
                 break
 
-            case "back":
+            case "BACK":
                 var model = projswipeview.itemAt(projswipeview.currentIndex).model
                 model.remove(1, model.count-1)
                 projswipeview.decrementCurrentIndex()
@@ -1843,7 +1854,8 @@ ApplicationWindow {
                 var newlist = subprojlist.createObject(projswipeview)
                 projswipeview.addItem(newlist)
                 var sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
-                imageWriter.setProjectSearch(item.name,2)
+                imageWriter.setProjectSearch(item.board,2)
+                item.type = "boards";
 
                 var listurl = imageWriter.getProjectListUrl()
                 if (listurl != "") {
@@ -1860,7 +1872,6 @@ ApplicationWindow {
                         }
 
                     })
-
                 } else if (imageWriter.hasKuiper()) {
                     var projlist = JSON.parse(imageWriter.getProjectList())
                     for (var i in projlist) {
@@ -1873,8 +1884,7 @@ ApplicationWindow {
                     \nJSON file not found on BOOT partition.\n
                     JSON file not found online.")
                 }
-
-                btnTarget.text += item.name + ": "
+                btnTarget.text += item.board + ": "
 
                 projswipeview.incrementCurrentIndex()
                 break;
