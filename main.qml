@@ -95,6 +95,38 @@ ApplicationWindow {
             implicitWidth: window.width
             implicitHeight: window.height/2
 
+            states: [
+                State {
+                    name: "storage_not_ok"
+                    PropertyChanges {
+                        target: btnWrite;
+                        enabled: false;
+                    }
+                    PropertyChanges {
+                        target: btnOs;
+                        enabled: false;
+                    }
+                    PropertyChanges {
+                        target: btnTarget;
+                        enabled: false;
+                    }
+                },
+                State {
+                    name: "storage_ok"
+                    PropertyChanges {
+                        target: btnWrite;
+                        enabled: true;
+                    }
+                    PropertyChanges {
+                        target: btnOs;
+                        enabled: true;
+                    }
+                    PropertyChanges {
+                        target: btnTarget;
+                        enabled: true;
+                    }
+            ]
+
             ColumnLayout {
                 id: columnLayout
                 y: 14
@@ -168,7 +200,6 @@ ApplicationWindow {
                         osswipeview.currentItem.forceActiveFocus()
                         btnOs.text = ""
                         btnOs.highlighted = true
-                        btnWrite.enabled = false
                         btnWrite.enabled = false
                     }
                 }
@@ -346,8 +377,15 @@ ApplicationWindow {
         height: parent.height-50    
         padding: 0
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        onClosed: imageWriter.stopDriveListPolling()
-        onOpened: imageWriter.startDriveListPolling()
+        onClosed: {
+            if (sourceList.count == 0) {
+                controls.state = "storage_not_ok";
+            }
+            imageWriter.stopDriveListPolling()
+        }
+        onOpened: {
+            imageWriter.startDriveListPolling()
+        }
 
         DropShadow {
             width: storagePopup.width
@@ -566,8 +604,6 @@ ApplicationWindow {
                     onClicked: {
                         selectDstItem(model)
                         btnTarget.text = qsTr("Target (unconfigured)")
-                        btnOs.highlighted = true
-                        btnOs.enabled = true
                     }
                 }
             }
@@ -1445,15 +1481,13 @@ ApplicationWindow {
     }
 
     function resetbtnWrite() {
-        btnStorage.text = qsTr("Storage (unconfigured)")
-        btnStorage.enabled = true
+        btnStorage.state = "not_selected"
         btnOs.text = qsTr("Image Source (unconfigured)")
         btnTarget.highlighted = true
         btnTarget.text = "TARGET (UNCONFIGURED)"
         btnTarget.visible = false
         btnOs.enabled = false
         progressBar.visible = false
-        btnStorage.enabled = true
         progressText.visible = false
         progressText.text = qsTr("")
         btnWrite.visible = true
@@ -1675,17 +1709,18 @@ ApplicationWindow {
     function selectDstItem(d) {
         storagePopup.close()
         if (d.isReadOnly) {
+            controls.state = "storage_not_ok";
             onError(qsTr("SD card is write protected.<br>Push the lock switch on the left side of the card upwards, and try again."))
             return
         }
 
         imageWriter.setDst(d.device, d.size, d.mountpoints)
-        btnOs.text = qsTr("Image Source (unconfigured)")
-        btnTarget.text = qsTr("TARGET (UNCONFIGURED)")
+        btnOs.text = qsTr("Image Source (UNCONFIGURED)")
+        btnTarget.text = qsTr("Target (UNCONFIGURED)")
         btnTarget.visible = false
         btnStorage.text = d.description
 
-        btnOs.enabled = true;
+        controls.state ="storage_ok";
         if (imageWriter.hasKuiper())
             writeActionPopup.open()
     }
