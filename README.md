@@ -21,6 +21,12 @@ sudo apt install --no-install-recommends build-essential devscripts debhelper cm
     qml-module-qtquick2 qml-module-qtquick-controls2 qml-module-qtquick-layouts qml-module-qtquick-templates2 qml-module-qtquick-window2 qml-module-qtgraphicaleffects
 ```
 
+In Ubuntu 22.04, `qt5-default` is replaced by `qtbase5-dev`:
+
+```bash
+    sudo apt-get install -y qtbase5-dev qt5-qmake
+```
+
 #### Get the source
 
 ```
