@@ -104,7 +104,7 @@ ApplicationWindow {
                     }
                     PropertyChanges {
                         target: btnOs;
-                        enabled: false;
+                        state: "not_configured";
                     }
                     PropertyChanges {
                         target: btnTarget;
@@ -123,7 +123,7 @@ ApplicationWindow {
                     }
                     PropertyChanges {
                         target: btnOs;
-                        enabled: true;
+                        state: "not_configured";
                     }
                     PropertyChanges {
                         target: btnTarget;
@@ -172,6 +172,7 @@ ApplicationWindow {
                                 target: btnStorage
                                 text: qsTr("Storage (unconfigured)")
                                 highlighted: true
+                                enabled: true
                                 Material.background: btnStorage.highlighted ? Material.Pink : "#2ecc71"
                             }
                         },
@@ -180,6 +181,7 @@ ApplicationWindow {
                             PropertyChanges {
                                 target: btnStorage
                                 highlighted: false
+                                enabled: true
                                 Material.background: btnStorage.highlighted ? Material.Pink : "#2ecc71"
                             }
                         }
@@ -201,7 +203,6 @@ ApplicationWindow {
                 Button {
                     id: btnOs
                     height: 40
-                    text: qsTr("Image Source (unconfigured)")
                     enabled: false
                     Layout.rightMargin: 0
                     Layout.bottomMargin: 0
@@ -215,8 +216,39 @@ ApplicationWindow {
                     Layout.fillHeight: true
                     Layout.preferredHeight: -1
                     Layout.fillWidth: true
-                    highlighted: false
-                    Material.background: btnOs.highlighted ? Material.Pink : "#2ecc71"
+
+                    states : [
+                        State {
+                            name: "not_configured"
+                            PropertyChanges {
+                                target: btnOs
+                                text: qsTr("Image Source (unconfigured)")
+                                highlighted: true
+                                enabled: true
+                                Material.background: btnOs.highlighted ? Material.Pink : "#2ecc71"
+                            }
+                        },
+                        State {
+                            name: "configured"
+                            PropertyChanges {
+                                target: btnOs
+                                highlighted: true
+                                enabled:true
+                                Material.background: btnOs.highlighted ? Material.Pink : "#2ecc71"
+                            }
+                        },
+                        State {
+                            name: "configure_existing"
+                            PropertyChanges {
+                                target: btnOs
+                                text: qsTr("CONFIGURE EXISTING CONTENT")
+                                highlighted: false
+                                enabled: true
+                                Material.background: btnOs.highlighted ? Material.Pink : "#2ecc71"
+                            }
+                        }
+                    ]
+                    state: "not_configured"
 
                     ToolTip.delay: 300
                     ToolTip.timeout: 5000
@@ -227,7 +259,7 @@ ApplicationWindow {
                         ospopup.open()
                         osswipeview.currentItem.forceActiveFocus()
                         btnOs.text = ""
-                        btnOs.highlighted = true
+                        btnOs.state = "configured"
                         btnWrite.enabled = false
                     }
                 }
@@ -290,7 +322,7 @@ ApplicationWindow {
                 ToolTip.text: qsTr("Start writing or configuring the SD card content")
 
                 onClicked: {
-                    if (btnOs.text != qsTr("CONFIGURE EXISTING CONTENT")) {
+                    if (btnOs.state != "configure_existing") {
                         if (!imageWriter.readyToWrite()) {
                             return
                         }
@@ -496,6 +528,8 @@ ApplicationWindow {
                         width: window.width-100
                         height: window.height-100
                         boundsBehavior: Flickable.StopAtBounds
+                        property variant selectedItem: currentItem;
+
                         highlight:
                             Rectangle {
                             color: "lightsteelblue"
@@ -509,20 +543,20 @@ ApplicationWindow {
                             if (currentIndex == -1) {
                                 return
                             }
+                            selectedItem = currentItem
                             selectDstItem(currentItem)
                             btnTarget.text = qsTr("Target (unconfigured)")
-                            btnOs.highlighted = true
-                            btnOs.enabled = true
+                            btnOs.state = "not_configured"
                         }
                         Accessible.onPressAction: {
                             if (currentIndex == -1) {
                                 return
                             }
+                            selectedItem = currentItem
                             selectDstItem(currentItem)
-                            btnTarget.text = qsTr("Target (unconfigured)")
 
-                            btnOs.highlighted = true
-                            btnOs.enabled = true
+                            btnTarget.text = qsTr("Target (unconfigured)")
+                            btnOs.state = "not_configured"
                         }
                         Connections {
                             target: driveListModel;
@@ -636,6 +670,7 @@ ApplicationWindow {
                     onExited: rectSelected.mouseOver = false
 
                     onClicked: {
+                        sourceList.selectedItem = model;
                         selectDstItem(model)
                         btnTarget.text = qsTr("Target (unconfigured)")
                     }
@@ -653,8 +688,8 @@ ApplicationWindow {
         padding: 0
         property string categorySelected : ""
         onClosed: {
-            if (btnOs.text == qsTr("")) {
-                btnOs.text = qsTr("Image Source (unconfigured)")
+            if (btnOs.text === qsTr("")) {
+                btnOs.state = "not_configured"
                 btnTarget.visible = false
             }
             osswipeview.currentIndex = 0
@@ -706,8 +741,9 @@ ApplicationWindow {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        btnOs.text = "IMAGE SOURCE (UNCONFIGURED)"
-                        btnOs.highlighted = true 
+                        btnOs.state = "not_configured"
+                        //btnOs.text = "1IMAGE SOURCE (UNCONFIGURED)"
+                        //btnOs.highlighted = true
                         ospopup.close()
                     }
                 }
@@ -1354,9 +1390,8 @@ ApplicationWindow {
                     text: qsTr("Yes")
                     onClicked: {
                         writeActionPopup.close()
-                        btnOs.text = qsTr("CONFIGURE EXISTING CONTENT");
+                        btnOs.state = "configure_existing"
                         imageWriter.setProjectListUrl("")
-                        btnOs.highlighted = false;
                         btnTarget.highlighted = true;
                         btnTarget.visible = true;
                         btnTarget.enabled = true;
@@ -1459,20 +1494,20 @@ ApplicationWindow {
         xhr.timeout = 5000
         xhr.onreadystatechange = (function(x) {
             return function() {
-                if (x.readyState === x.DONE)
-                {
-                    if (x.status === 200)
-                    {
-                        callback(x)
-                    }
-                    else
-                    {
-                        onError(qsTr("Error downloading OS list from Internet"))
+                if (x.readyState === x.DONE) {
+                    if (x.status === 200 || x.status === 0) {
+                        callback(x);
+                    } else if (x.status === 304) {
+                        // https://www.qt.io/blog/2011/04/29/http-caching-with-qt
+                        console.log("Cache fault, 304 error.")
+                        // force a cache clean
+                    } else {
+                        onError(qsTr("Error downloading OS list from Internet"));
                     }
                 }
-            }
+                }
         })(xhr)
-        xhr.open("GET", url)
+        xhr.open("GET", url);
         xhr.send()
     }
 
@@ -1522,12 +1557,10 @@ ApplicationWindow {
     }
 
     function resetbtnWrite() {
-        btnStorage.state = "not_selected"
-        btnOs.text = qsTr("Image Source (unconfigured)")
+        imageWriter.setDst("")
         btnTarget.highlighted = true
         btnTarget.text = "TARGET (UNCONFIGURED)"
         btnTarget.visible = false
-        btnOs.enabled = false
         progressBar.visible = false
         progressText.visible = false
         progressText.text = qsTr("")
@@ -1535,6 +1568,8 @@ ApplicationWindow {
         btnWrite.enabled = imageWriter.readyToWrite()
         cancelbtnWrite.visible = false
         cancelverifybutton.visible = false
+        controls.state = "storage_not_ok"
+        btnOs.state = "not_configured"
     }
 
     function onError(msg) {
@@ -1551,7 +1586,6 @@ ApplicationWindow {
         msgpopup.title = qsTr("Write Successful")
         if (btnOs.text === qsTr("Erase")) {
             msgpopup.text = qsTr("<b>%1</b> has been erased<br><br>You can now remove the SD card from the reader").arg(btnStorage.text)
-            imageWriter.setDst("")
             resetbtnWrite()
         } else {
             msgpopup.text = qsTr("<b>%1</b> has been written to <b>%2</b>").arg(btnOs.text).arg(btnStorage.text)
@@ -1565,7 +1599,6 @@ ApplicationWindow {
                 cancelbtnWrite.visible = false
                 btnOs.enabled = true
             } else {
-                imageWriter.setDst("")
                 resetbtnWrite()
             }
         }
@@ -1575,6 +1608,8 @@ ApplicationWindow {
         }
         btnWrite.visible = true
         btnTarget.enabled = true
+        controls.state = "storage_not_ok"
+        btnOs.state = "not_configured"
         msgpopup.openPopup()
     }
 
@@ -1680,8 +1715,7 @@ ApplicationWindow {
             }
             else if (d.subitems_url === "internal://configure_existing")
             {
-                btnOs.text = qsTr("CONFIGURE EXISTING CONTENT")
-                btnOs.highlighted = false
+                btnOs.state = "configure_existing"
                 btnTarget.text = qsTr("TARGET (UNCONFIGURED)")
                 btnTarget.highlighted = true
                 btnTarget.visible = true
@@ -1742,28 +1776,40 @@ ApplicationWindow {
             if (imageWriter.readyToWrite()) {
                 btnOs.highlighted = false
             }
-            if (btnOs.text != qsTr("CONFIGURE EXISTING CONTENT"))
+            if (btnOs.state != "configure_existing") {
                 btnWrite.enabled = true
+            }
         }
     }
 
     function selectDstItem(d) {
-        storagePopup.close()
-        if (d.isReadOnly) {
+        if (storagePopup.opened) {
+            storagePopup.close()
+        }
+        if (!d) {
+            imageWriter.setDst("")
             controls.state = "storage_not_ok";
-            onError(qsTr("SD card is write protected.<br>Push the lock switch on the left side of the card upwards, and try again."))
-            return
+            return;
         }
 
-        imageWriter.setDst(d.device, d.size, d.mountpoints)
-        btnOs.text = qsTr("Image Source (UNCONFIGURED)")
-        btnTarget.text = qsTr("Target (UNCONFIGURED)")
-        btnTarget.visible = false
-        btnStorage.state = "selected"
-        btnStorage.text = d.description
-        controls.state ="storage_ok";
-        if (imageWriter.hasKuiper())
-            writeActionPopup.open()
+        if (d.isReadOnly) {
+            imageWriter.setDst("")
+            controls.state = "storage_not_ok";
+            onError(qsTr("SD card is write protected.<br>Push the lock switch on the left side of the card upwards, and try again."))
+            return;
+        }
+
+        var success = imageWriter.setDst(d.device, d.size, d.mountpoints)
+        if (success) {
+            btnOs.state = "not_configured"
+            btnTarget.text = qsTr("Target (UNCONFIGURED)")
+            btnTarget.visible = false
+            btnStorage.state = "selected"
+            btnStorage.text = d.description
+            controls.state ="storage_ok";
+            if (imageWriter.hasKuiper())
+                writeActionPopup.open()
+        }
     }
 
     function selectProj(item) {

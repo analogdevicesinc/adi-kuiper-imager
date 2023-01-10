@@ -140,11 +140,15 @@ void ImageWriter::setSrc(const QUrl &url, quint64 downloadLen, quint64 extrLen, 
 }
 
 /* Set device to write to */
-void ImageWriter::setDst(const QString &device, quint64 deviceSize, QStringList mountpoints)
+bool ImageWriter::setDst(const QString &device, quint64 deviceSize, QStringList mountpoints)
 {
+    if (_dst == device && _devLen == deviceSize && _mountpoints == mountpoints) {
+	    return false;
+    }
     _dst = device;
     _devLen = deviceSize;
     _mountpoints = mountpoints;
+    return true;
 }
 
 QString ImageWriter::_getsStorageInfo(QString name, QString type)
@@ -183,12 +187,10 @@ bool ImageWriter::hasKuiper()
 
     osinfo.setFileName(boot + "/kuiper.json");
     if (!osinfo.open(QFile::ReadOnly | QFile::Text)) {
-        qDebug() << "Can't open os-release file";
+	qDebug() << "Can't open os-release kuiper.json file";
         return false;
     }
     return true;
-//    QTextStream content(&osinfo);
-//    return content.readAll().contains("Kuiper");
 }
 
 QByteArray ImageWriter::scanProjectList(QString projectPath, QString type)
