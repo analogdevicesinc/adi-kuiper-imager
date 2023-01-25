@@ -1280,7 +1280,7 @@ bool ImageWriter::mountUsbSourceMedia()
     if (!dir.exists("/media"))
         dir.mkdir("/media");
 
-    for (auto devname : list)
+    for (const auto &devname : qAsConst(list))
     {
         if (!devname.startsWith("mmcblk0") && !QFile::symLinkTarget("/sys/class/block/"+devname).contains("/devices/virtual/"))
         {
