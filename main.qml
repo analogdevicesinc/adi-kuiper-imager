@@ -241,7 +241,9 @@ ApplicationWindow {
                             name: "configure_existing"
                             PropertyChanges {
                                 target: btnOs
-                                text: qsTr("CONFIGURE EXISTING CONTENT")
+                                text: (checkKuiperVersion()) ? qsTr("CONFIGURE EXISTING CONTENT") :
+                                       qsTr("CONFIGURE EXISTING CONTENT" +
+                                            "\n Warning: JSON version is different. Some features may not work properly!")
                                 highlighted: false
                                 enabled: true
                                 Material.background: btnOs.highlighted ? Material.Pink : "#2ecc71"
@@ -1810,6 +1812,13 @@ ApplicationWindow {
             if (imageWriter.hasKuiper())
                 writeActionPopup.open()
         }
+    }
+
+    function checkKuiperVersion() {
+        if (btnOs.state == "configure_existing") {
+            return imageWriter.compareKuiperJsonVersions()
+        }
+        return true;
     }
 
     function selectProj(item) {
