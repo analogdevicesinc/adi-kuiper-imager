@@ -945,7 +945,7 @@ ApplicationWindow {
                             Accessible.focused: parent.parent.parent.ListView.view.currentIndex === index
 
                             ToolTip {
-                                visible: osMouseArea.containsMouse && typeof(tooltip) == "string" && tooltip != ""
+                                visible: osMouseArea.containsMouse && typeof(tooltip) == "string" && tooltip !== ""
                                 delay: 1000
                                 text: typeof(tooltip) == "string" ? tooltip : ""
                                 clip: false
@@ -955,7 +955,7 @@ ApplicationWindow {
                     Column {
                         Image {
                             source: "icons/ic_chevron_right_40px.svg"
-                            visible: (typeof(subitems) == "object" && subitems.count) || (typeof(subitems_url) == "string" && subitems_url != "" && subitems_url != "internal://back" && subitems_url != "internal://configure_existing")
+                            visible: (typeof(subitems) == "object" && subitems.count) || (typeof(subitems_url) == "string" && subitems_url !== "" && subitems_url !== "internal://back" && subitems_url !== "internal://configure_existing")
                             verticalAlignment: Image.AlignVCenter
                             horizontalAlignment: Image.AlignHCenter
                             height: parent.parent.parent.height
