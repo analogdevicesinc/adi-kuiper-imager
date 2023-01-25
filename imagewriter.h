@@ -123,7 +123,7 @@ public:
     Q_INVOKABLE void setProjectListUrl(QString url);
     Q_INVOKABLE QUrl getProjectListUrl();
     Q_INVOKABLE QString crypt(const QByteArray &password);
-
+    Q_INVOKABLE bool compareKuiperJsonVersions();
 signals:
     /* We are emiting signals with QVariant as parameters because QML likes it that way */
 
@@ -182,6 +182,8 @@ protected:
     void _parseCompressedFile();
     QString _getsStorageInfo(QString name, QString type);
     void setupBootWrite();
+private:
+    int compareVersions(std::string v1, std::string v2);
 };
 
 #endif // IMAGEWRITER_H

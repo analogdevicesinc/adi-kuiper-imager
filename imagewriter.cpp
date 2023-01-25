@@ -193,6 +193,67 @@ bool ImageWriter::hasKuiper()
     return true;
 }
 
+bool ImageWriter::compareKuiperJsonVersions()
+{
+    // Compare JSON schema versions for local and upstream kuiper.json
+	QString path = _getsStorageInfo("BOOT", "path");
+	QJsonObject versionObj;
+	QJsonDocument jdoc;
+	QString data;
+	QFile file;
+	int res = -1;
+
+	path+="/kuiper.json";
+	file.setFileName(path);
+	file.open(QIODevice::ReadOnly | QIODevice::Text);
+
+	data = file.readAll();
+	file.close();
+	jdoc = { QJsonDocument::fromJson(data.toUtf8()) };
+
+	versionObj = jdoc.object();
+	auto versionNode = versionObj["version"];
+	if (!versionNode.isNull()) {
+		std::string copyOrig(KUIPER_JSON_SCHEMA_VERSION);
+		std::string copyVersion(versionNode.toString().toStdString());
+		std::size_t found = copyOrig.find_last_of(".");
+		if (found != std::string::npos) {
+			copyOrig = copyOrig.substr(0, found);
+		}
+		found = copyVersion.find_last_of(".");
+		if (found != std::string::npos) {
+			copyVersion = copyVersion.substr(0, found);
+		}
+		res = compareVersions(copyOrig, copyVersion);
+	}
+	if (res == 0) {
+		return true;
+	}
+	return false;
+}
+
+int ImageWriter::compareVersions(std::string v1, std::string v2)
+{
+	while ((v1.find(".") != std::string::npos) ||
+			(v2.find(".") != std::string::npos)) {
+		if (v1.find(".") != std::string::npos) {
+			v1.erase(v1.find("."), 1);
+		}
+		if (v2.find(".") != std::string::npos) {
+			v2.erase(v2.find("."), 1);
+		}
+	}
+	if (v1.size() < v2.size()) {
+		std::string surplus("0", (v2.size() - v1.size()));
+		v1.append(surplus);
+	} else if (v2.size() < v1.size()) {
+		std::string surplus("0", (v1.size() - v2.size()));
+		v2.append(surplus);
+	}
+
+	return v1.compare(v2);
+}
+
 QByteArray ImageWriter::scanProjectList(QString projectPath, QString type)
 {
     QString boot = _getsStorageInfo("BOOT", "path");
