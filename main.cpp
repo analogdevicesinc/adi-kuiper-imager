@@ -210,6 +210,7 @@ int main(int argc, char *argv[])
     engine.setNetworkAccessManagerFactory(&namf);
     engine.rootContext()->setContextProperty("imageWriter", &imageWriter);
     engine.rootContext()->setContextProperty("driveListModel", imageWriter.getDriveList());
+    engine.rootContext()->setContextProperty("KUIPER_RPI_README", KUIPER_RPI_README);
     engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
 
     if (engine.rootObjects().isEmpty())
