@@ -12,6 +12,13 @@
 
 #define KUIPER_JSON_SCHEMA_VERSION	  "0.1.0"
 
+#define KUIPER_RPI_README		  "For loading RPI overlays there are two methods: \n" \
+					  "1. Manually edit /boot/config.txt and add a new line with \"dtoverlay=<overlay_name>[,<overlay_arguments>]\" \n" \
+					  "2. Load an overlay dynamically: after RPi boots, open a terminal and type \n" \
+					  "\"sudo dtoverlay <overlay_name>[,<overlay_arguments>]\" \n\n" \
+					  "In both cases only specify the overlay name, without the extension or path. \n" \
+					  "Overlay binaries (*.dtbo) can be found in /boot/overlays.\n"
+
 /* Time synchronization URL (only used on eglfs QPA platform, URL must be HTTP) */
 #define TIME_URL                          "http://downloads.raspberrypi.org/os_list_imagingutility_v2.json?time_synchronization"
 

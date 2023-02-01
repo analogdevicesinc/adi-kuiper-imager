@@ -1160,11 +1160,13 @@ ApplicationWindow {
                         kernel: ""
                         preloader: ""
                         files: []
+                        isReadme: false
                     }
                 }
 
                 currentIndex: -1
                 delegate: projdelegate
+
                 width: window.width-100
                 height: window.height-100
                 boundsBehavior: Flickable.StopAtBounds
@@ -1190,6 +1192,7 @@ ApplicationWindow {
                 kernel: ""
                 preloader: ""
                 files: []
+                isReadme: false
             }
 
             ListElement {
@@ -1197,6 +1200,7 @@ ApplicationWindow {
                 name: "xilinx"
                 description: "Xilinx"
                 type: "platforms"
+                isReadme: false
             }
 
             ListElement {
@@ -1204,6 +1208,7 @@ ApplicationWindow {
                 name: "intel"
                 description: "Intel"
                 type: "platforms"
+                isReadme: false
             }
         }
 
@@ -1216,6 +1221,7 @@ ApplicationWindow {
 
                 Rectangle {
                     id: projbgrect
+                    visible: !isReadme
                     radius: 5
                     anchors.fill: parent
                     anchors.rightMargin: 30
@@ -1236,14 +1242,17 @@ ApplicationWindow {
                     radius: projbgrect.radius
                     opacity: 0.4
                     color: "#f39c00"
-                    visible: mouseOver && parent.ListView.view.currentIndex !== index
+                    visible: !isReadme && (mouseOver && parent.ListView.view.currentIndex !== index)
                     property bool mouseOver: false
                 }
 
                 Row {
+                    visible: true
                     leftPadding: 25
+                    width: parent.width
 
                     Column {
+                        visible: !isReadme
                         width: 64
                         topPadding: 5
                         bottomPadding: 5
@@ -1255,9 +1264,10 @@ ApplicationWindow {
                             height: parent.parent.parent.height-10
                         }
                     }
-                    Column {
-                        width: parent.parent.width
 
+                    Column {
+                        visible: !isReadme
+                        width: parent.width
                         Text {
                             textFormat: Text.StyledText
                             height: parent.parent.parent.height
@@ -1278,11 +1288,32 @@ ApplicationWindow {
                             }
                         }
                     }
+
+                    ColumnLayout {
+                        visible: isReadme
+                        width: parent.width
+                        Text {
+                            textFormat: Text.PlainText
+                            font.family: roboto.name
+                            padding: 10
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: rectSelected.width
+                            wrapMode: Text.WordWrap;
+                            text: {
+                                var txt = ""
+                                if (type !== "boards" && type !== "architectures") {
+                                    txt += name
+                                }
+                                return txt
+                            }
+                        }
+                    }
                 }
 
                 MouseArea {
+                    enabled: !isReadme
                     anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
+                    cursorShape: !isReadme ? Qt.PointingHandCursor : Qt.ArrowCursor
                     hoverEnabled: true
 
                     onEntered: {
@@ -1949,7 +1980,14 @@ ApplicationWindow {
                     JSON file not found online.")
                 }
                 btnTarget.text += item.board + ": "
-
+                var strFindIdx = item.board.indexOf("rpi")
+                if (strFindIdx === 0) {
+                    newlist = subprojlist.createObject(projswipeview)
+                    projswipeview.addItem(newlist)
+                    sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
+                    var readme = {"name": KUIPER_RPI_README, "type": "BACK", "isReadme": true}
+                    sublist.append(readme);
+                }
                 projswipeview.incrementCurrentIndex()
                 break;
         }
