@@ -54,6 +54,7 @@ ImageWriter::ImageWriter(QObject *parent)
       _embeddedMode(false), _online(false)
 {
     connect(&_polltimer, SIGNAL(timeout()), SLOT(pollProgress()));
+    connect(&_drivelisttimer, SIGNAL(timeout()), SIGNAL(driveListTimeout()));
 
     QString platform = QGuiApplication::platformName();
     if (platform == "eglfs" || platform == "linuxfb")
@@ -230,6 +231,17 @@ bool ImageWriter::compareKuiperJsonVersions()
 		return true;
 	}
 	return false;
+}
+
+void ImageWriter::enableDriveListTimer(bool start)
+{
+	if (start) {
+		_drivelisttimer.start(100);
+	} else {
+		if (_drivelisttimer.isActive()) {
+			_drivelisttimer.stop();
+		}
+	}
 }
 
 int ImageWriter::compareVersions(std::string v1, std::string v2)

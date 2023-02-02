@@ -324,6 +324,7 @@ ApplicationWindow {
                 ToolTip.text: qsTr("Start writing or configuring the SD card content")
 
                 onClicked: {
+                    imageWriter.enableDriveListTimer(false);
                     if (btnOs.state != "configure_existing") {
                         if (!imageWriter.readyToWrite()) {
                             return
@@ -444,8 +445,10 @@ ApplicationWindow {
                 controls.state = "storage_not_ok";
             }
             imageWriter.stopDriveListPolling()
+            imageWriter.enableDriveListTimer(true)
         }
         onOpened: {
+            imageWriter.enableDriveListTimer(false)
             imageWriter.startDriveListPolling()
         }
 
@@ -1675,6 +1678,12 @@ ApplicationWindow {
                 }
             }
         })
+    }
+
+    function driveListUpdate() {
+        imageWriter.startDriveListPolling()
+        selectDstItem(sourceList.selectedItem)
+        imageWriter.stopDriveListPolling()
     }
 
     function newSublist() {
