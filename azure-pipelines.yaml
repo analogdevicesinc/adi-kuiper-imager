@@ -1,3 +1,6 @@
+variables:
+    QT_FORMULAE: qt@5
+
 trigger:
   - qml
   - dev/*
@@ -5,6 +8,45 @@ trigger:
   - main
 
 jobs:
+  - job: "MacOS"
+    strategy:
+      matrix:
+        macOS_11:
+          imageName: 'macOS-11'
+          artifactName: 'macOS-11'
+        macOS_12:
+          imageName: 'macOS-12'
+          artifactName: 'macOS-12'
+    pool:
+      vmImage: $[ variables['imageName'] ]
+    steps:
+      - checkout: self
+        fetchDepth: 1
+        clean: true
+      - script: |
+              brew install $QT_FORMULAE dylibbundler
+        displayName: 'Install deps'
+        workingDirectory: $(Build.Repository.LocalPath)
+      - script: |
+              export PATH="/usr/local/opt/$QT_FORMULAE/bin:$PATH"
+              export PKG_CONFIG_PATH="/usr/local/opt/$QT_FORMULAE/lib/pkgconfig"
+              mkdir build && cd build
+              cmake ..
+              make
+        displayName: 'Build'
+        workingDirectory: $(Build.Repository.LocalPath)
+      - script: ./mac/package_macos.sh
+        displayName: 'Create kuiper imager dmg'
+        workingDirectory: $(Build.Repository.LocalPath)
+      - script: |
+              cp build/kuiper-imager.dmg $(Build.ArtifactStagingDirectory)
+        displayName: 'Copy kuiper imager dmg'
+        workingDirectory: $(Build.Repository.LocalPath)
+      - task: PublishBuildArtifacts@1
+        condition: not(canceled())
+        inputs:
+          targetPath: $(Build.ArtifactStagingDirectory)/*.dmg
+          artifactName: ImagerArtifacts-$(imageName)
   - job: "Ubuntu"
     strategy:
       matrix:
@@ -17,6 +59,7 @@ jobs:
       - checkout: self
 
       - script: |
+          sudo apt-get -y update
           sudo apt-get -y install --no-install-recommends build-essential devscripts debhelper cmake git libarchive-dev libcurl4-openssl-dev qtbase5-dev qtbase5-dev-tools qtdeclarative5-dev libqt5svg5-dev qttools5-dev qt5-qmake libssl-dev qml-module-qtquick2 qml-module-qtquick-controls2 qml-module-qtquick-layouts qml-module-qtquick-templates2 qml-module-qtquick-window2 qml-module-qtgraphicaleffects
         displayName: Install deps
 
@@ -28,7 +71,7 @@ jobs:
         condition: not(canceled())
         inputs:
           pathToPublish: $(Build.ArtifactStagingDirectory)
-          artifactName: ImagerArtifacts
+          artifactName: ImagerArtifacts-$(imageName)
 
   - job: "Windows"
     pool: { vmImage: "windows-2022" }
@@ -45,7 +88,7 @@ jobs:
         displayName: Update MSYS2
 
       - script: >-
-          %MSYS2BASH% -lc "pacman --noconfirm -Sy git make mingw-w64-cross-binutils mingw-w64-i686-{toolchain,cmake,make,ninja,qt5-base,qt5-winextras,qt5,qt5-3d,gdb,mesa,qt-creator,qt5-quickcontrols2}"
+          %MSYS2BASH% -lc "pacman --noconfirm -Sy git make mingw-w64-cross-binutils mingw-w64-i686-{toolchain,cmake,make,ninja,qt5-base,qt5-winextras,qt5,qt5-3d,gdb,mesa,qt5-quickcontrols2}"
         displayName: Install deps
 
       - script: >-
