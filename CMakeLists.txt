@@ -80,7 +80,6 @@ endif()
 qt5_add_translation(QM_FILES i18n/rpi-imager_en.ts i18n/rpi-imager_nl.ts i18n/rpi-imager_zh_cn.ts i18n/rpi-imager_tr.ts i18n/rpi-imager_fr.ts i18n/rpi-imager_de.ts i18n/rpi-imager_sk.ts i18n/rpi-imager_it.ts)
 configure_file(i18n/translations.qrc "${CMAKE_CURRENT_BINARY_DIR}" COPYONLY)
 set(SOURCES ${SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/translations.qrc ${QM_FILES})
-qt5_add_resources(qml_QRC qml.qrc)
 
 if (WIN32)
     # Adding WIN32 prevents a console window being opened on Windows
@@ -162,10 +161,12 @@ if (WIN32)
             "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.exe" "${CMAKE_BINARY_DIR}/dependencies/fat32format/fat32format.exe" "${CMAKE_SOURCE_DIR}/license.txt"
             "${CMAKE_BINARY_DIR}/deploy")
 
+    file(GLOB LIB_DEPENDENCIES "${Qt5_DIR}/../../../bin/libcrypto*" "${Qt5_DIR}/../../../bin/libssl*")
+
     add_custom_command(TARGET ${PROJECT_NAME}
         POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
-            "${Qt5_DIR}/../../../bin/libssl-1_1.dll" "${Qt5_DIR}/../../../bin/libcrypto-1_1.dll"
+            ${LIB_DEPENDENCIES}
             "${CMAKE_BINARY_DIR}/deploy")
 
     configure_file(
@@ -258,4 +259,4 @@ endif()
 
 include_directories(${CURL_INCLUDE_DIR} ${LibArchive_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::Core Qt5::Quick Qt5::Svg ${CURL_LIBRARIES} ${LibArchive_LIBRARIES} ${OPENSSL_LIBRARIES} ${ATOMIC_LIBRARY} ${EXTRALIBS})
-target_compile_definitions(${PROJECT_NAME} PRIVATE QT_QML_DEBUG)
+#target_compile_definitions(${PROJECT_NAME} PRIVATE QT_QML_DEBUG)
