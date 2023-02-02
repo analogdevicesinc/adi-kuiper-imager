@@ -124,6 +124,7 @@ public:
     Q_INVOKABLE QUrl getProjectListUrl();
     Q_INVOKABLE QString crypt(const QByteArray &password);
     Q_INVOKABLE bool compareKuiperJsonVersions();
+    Q_INVOKABLE void enableDriveListTimer(bool start);
 signals:
     /* We are emiting signals with QVariant as parameters because QML likes it that way */
 
@@ -136,6 +137,7 @@ signals:
     void finalizing();
     void networkOnline();
     void preparationStatusUpdate(QVariant msg);
+    void driveListTimeout();
 
 protected slots:
 
@@ -163,7 +165,7 @@ protected:
     quint64 _downloadLen, _extrLen, _devLen, _dlnow, _verifynow;
     DriveListModel _drivelist;
     QQmlApplicationEngine *_engine;
-    QTimer _polltimer, _networkchecktimer;
+    QTimer _polltimer, _networkchecktimer, _drivelisttimer;
     PowerSaveBlocker _powersave;
     DownloadThread *_thread;
     bool _verifyEnabled, _multipleFilesInZip, _skipFormat, _cachingEnabled, _embeddedMode, _online;

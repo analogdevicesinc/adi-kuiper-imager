@@ -225,6 +225,7 @@ int main(int argc, char *argv[])
     qmlwindow->connect(&imageWriter, SIGNAL(cancelled()), qmlwindow, SLOT(onCancelled()));
     qmlwindow->connect(&imageWriter, SIGNAL(finalizing()), qmlwindow, SLOT(onFinalizing()));
     qmlwindow->connect(&imageWriter, SIGNAL(networkOnline()), qmlwindow, SLOT(fetchOSlist()));
+    qmlwindow->connect(&imageWriter, SIGNAL(driveListTimeout()), qmlwindow, SLOT(driveListUpdate()));
 
 #ifndef QT_NO_WIDGETS
     /* Set window position */
