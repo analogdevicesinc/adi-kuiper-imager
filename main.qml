@@ -1818,7 +1818,7 @@ ApplicationWindow {
             if (imageWriter.readyToWrite()) {
                 btnOs.highlighted = false
             }
-            if (btnOs.state != "configure_existing") {
+            if (btnOs.state != "configure_existing" && btnStorage.state == "selected") {
                 btnWrite.enabled = true
             }
         }
