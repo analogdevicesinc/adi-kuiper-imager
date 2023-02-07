@@ -747,8 +747,6 @@ ApplicationWindow {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                         btnOs.state = "not_configured"
-                        //btnOs.text = "1IMAGE SOURCE (UNCONFIGURED)"
-                        //btnOs.highlighted = true
                         ospopup.close()
                     }
                 }
