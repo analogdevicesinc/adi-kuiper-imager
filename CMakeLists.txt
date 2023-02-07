@@ -90,6 +90,7 @@ endif()
 
 # Because dependencies are typically not available by default on Windows, build bundled code
 if (WIN32)
+    set(QT_LOGGING_DEBUG 1)
     # Target Windows 7 (needed for drivelist module)
     add_definitions(-DWINVER=0x0601 -D_WIN32_WINNT=0x0601)
 
@@ -163,11 +164,11 @@ if (WIN32)
 
     file(GLOB LIB_DEPENDENCIES "${Qt5_DIR}/../../../bin/libcrypto*" "${Qt5_DIR}/../../../bin/libssl*")
 
-    add_custom_command(TARGET ${PROJECT_NAME}
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-            ${LIB_DEPENDENCIES}
-            "${CMAKE_BINARY_DIR}/deploy")
+#    add_custom_command(TARGET ${PROJECT_NAME}
+#        POST_BUILD
+#        COMMAND ${CMAKE_COMMAND} -E copy
+#	    "${Qt5_DIR}/../../../bin/libssl-1_1.dll" "${Qt5_DIR}/../../../bin/libcrypto-1_1.dll"
+#            "${CMAKE_BINARY_DIR}/deploy")
 
     configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/windows/kuiper-imager.nsi.in"
