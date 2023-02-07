@@ -1713,7 +1713,11 @@ ApplicationWindow {
 
     function driveListUpdate() {
         imageWriter.startDriveListPolling()
-        selectDstItem(sourceList.selectedItem)
+        var d = sourceList.selectedItem
+        if ((d && !d.isReadOnly) || !d) {
+            selectDstItem(d)
+        }
+
         imageWriter.stopDriveListPolling()
     }
 
