@@ -1632,9 +1632,8 @@ ApplicationWindow {
                 btnWrite.enabled = imageWriter.readyToWrite()
                 cancelverifybutton.visible = false
                 progressBar.visible = false
-                btnStorage.enabled = true
                 cancelbtnWrite.visible = false
-                btnOs.enabled = true
+                resetbtnWrite()
             } else {
                 resetbtnWrite()
             }
