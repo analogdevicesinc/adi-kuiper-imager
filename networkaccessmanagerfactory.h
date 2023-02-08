@@ -12,9 +12,13 @@ class QNetworkDiskCache;
 
 class NetworkAccessManagerFactory : public QObject, public QQmlNetworkAccessManagerFactory
 {
+    Q_OBJECT
 public:
     NetworkAccessManagerFactory();
     virtual QNetworkAccessManager *create(QObject *parent);
+
+public Q_SLOTS:
+    void forceCleanupCache();
 
 protected:
     QNetworkDiskCache *_c;
