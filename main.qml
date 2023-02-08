@@ -14,6 +14,8 @@ ApplicationWindow {
     id: window
     visible: true
 
+    signal cleanupCache();
+
     width:  640
     height: 480
     minimumWidth: 480
@@ -1533,7 +1535,8 @@ ApplicationWindow {
                         callback(x);
                     } else if (x.status === 304) {
                         // https://www.qt.io/blog/2011/04/29/http-caching-with-qt
-                        console.log("Cache fault, 304 error.")
+                        console.log("Cache fault, 304 error. Force cache cleanup.")
+                        window.cleanupCache();
                         // force a cache clean
                     } else {
                         onError(qsTr("Error downloading OS list from Internet"));

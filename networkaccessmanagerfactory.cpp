@@ -30,3 +30,9 @@ QNetworkAccessManager *NetworkAccessManagerFactory::create(QObject *parent)
     nam->setCache(_c);
     return nam;
 }
+
+void NetworkAccessManagerFactory::forceCleanupCache()
+{
+    _c->clear();
+    _c->remove(QUrl(OSLIST_URL));
+}
