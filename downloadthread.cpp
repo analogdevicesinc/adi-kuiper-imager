@@ -627,6 +627,7 @@ void DownloadThread::_writeComplete()
 {
     QByteArray computedHash = _writehash.result().toHex();
     qDebug() << "Hash of uncompressed image:" << computedHash;
+    qDebug() << "Hash of uncompressed image result:" << _writehash.result();
     if (!_expectedHash.isEmpty() && _expectedHash != computedHash)
     {
         qDebug() << "Mismatch with expected hash:" << _expectedHash;
@@ -743,13 +744,19 @@ bool DownloadThread::_verify()
 
     qDebug() << "Verify done in" << t1.elapsed() / 1000.0 << "seconds";
     qDebug() << "Verify hash:" << _verifyhash.result().toHex();
+    qDebug() << "Verify hash result:" << _verifyhash.result();
+    qDebug() << "Hash comparison result:  " << _verifyhash.result().compare(_writehash.result());
 
-    if (_verifyhash.result() == _writehash.result() || !_verifyEnabled || _cancelled)
+
+
+    if (_verifyhash.result().toHex() == _writehash.result().toHex() || !_verifyEnabled || _cancelled)
     {
         return true;
     }
     else
     {
+        qDebug() << "Verify enabled: " << _verifyEnabled;
+        qDebug() << "Cancelled: " << _cancelled;
         DownloadThread::_onDownloadError(tr("Verifying write failed. Contents of SD card is different from what was written to it."));
     }
 
