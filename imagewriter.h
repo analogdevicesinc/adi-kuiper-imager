@@ -159,7 +159,8 @@ protected:
     QUrl _src, _repo, _proj, _projlist;
     QString _dst, _cacheFileName, _parentCategory, _osName;
     QString _projectConfig[3];
-    QString _kernel, _preloader, _filelist;
+    QString _kernel, _preloader;
+    QStringList _filelist;
     QStringList _binaries, _mountpoints;
     QByteArray _expectedHash, _cachedFileHash, _cmdline, _config, _firstrun;
     quint64 _downloadLen, _extrLen, _devLen, _dlnow, _verifynow;
