@@ -48,6 +48,12 @@
 #include <QWinTaskbarProgress>
 #endif
 
+#ifdef Q_OS_LINUX
+#include <sys/ioctl.h>
+#include <linux/fs.h>
+#include "linux/udisks2api.h"
+#endif
+
 ImageWriter::ImageWriter(QObject *parent)
     : QObject(parent), _repo(QUrl(QString(OSLIST_URL))), _dlnow(0), _verifynow(0),
       _engine(nullptr), _thread(nullptr), _verifyEnabled(false), _cachingEnabled(false),
@@ -352,7 +358,7 @@ bool ImageWriter::selectProject()
 {
     QString kernel= _kernel;
     QString preloader = _preloader;
-    QString files = _filelist;
+    QStringList files = _filelist;
 #ifdef Q_OS_WIN
     WinFile bootloader, volumeFile;
 #else
@@ -363,7 +369,6 @@ bool ImageWriter::selectProject()
     qint64 _seek_target = _startSector * _sectorSize;
     QByteArray partition = _dst.toUtf8();
     QString boot = _getsStorageInfo("BOOT", "path");
-    QStringList binaries = files.split("%",QString::SkipEmptyParts);
 
     if (preloader != "") {
         bootloader.setFileName(boot + "/" +preloader);
@@ -372,6 +377,7 @@ bool ImageWriter::selectProject()
             return false;
         }
 
+// TBD does not work for all INTEL (works for adrv9009)
         bootloader.read(bootloaderBuf, _numSectors * _sectorSize);
         bootloader.close();
 
@@ -381,11 +387,35 @@ bool ImageWriter::selectProject()
         else
             partition += "3";
 #endif
-        volumeFile.setFileName(partition);
-        if (!volumeFile.open(QIODevice::WriteOnly)) {
-            qDebug() << "Failed to open bootloader partition";
-            return false;
-        }
+
+	volumeFile.setFileName(partition);
+
+#ifdef Q_OS_LINUX
+	auto a = "fdsfds";
+#ifndef QT_NO_DBUS
+	UDisks2Api udisks;
+	int fd = udisks.authOpen(partition);
+	if (fd != -1)
+	{
+	    volumeFile.open(fd, QIODevice::ReadWrite | QIODevice::Unbuffered, QFileDevice::AutoCloseHandle);
+//	if (volumeFile.open(QIODevice::ReadWrite | QIODevice::Unbuffered)) {
+
+//	}
+	}
+	else
+#endif
+	{
+	    qDebug() << tr("Failed to open bootloader partition '%1'.").arg(QString(partition));
+	    return false;
+	}
+#endif
+
+	// TBD request access auth
+//        if (!volumeFile.open(QIODevice::WriteOnly)) {
+//	    qDebug() << "Failed to open bootloader partition";
+//	    qDebug() << volumeFile.errorString();
+//            return false;
+//        }
 #ifdef Q_OS_WIN
         if(!volumeFile.lockVolume())
             return false;
@@ -394,17 +424,25 @@ bool ImageWriter::selectProject()
 #endif
         if (!volumeFile.write(bootloaderBuf, _numSectors * _sectorSize)) {
             qDebug() << "Failed to write the bootloader to partition";
+	    volumeFile.close();
             return false;
         }
         volumeFile.close();
     }
+
+    /* Copy image from common */
     if (kernel != "") {
-        if (QFile::exists(boot + "/" + kernel.split("/").takeLast()))
-            QFile::remove(boot + "/" + kernel.split("/").takeLast());
-        QFile::copy(boot + "/" + kernel, boot + "/" + kernel.split("/").takeLast());
+	QString toCopy = boot + "/" + kernel;
+	QString newFile = boot + "/" + kernel.split("/").takeLast();
+	if (QFile::exists(newFile))
+	    QFile::remove(newFile);
+	bool success = QFile::copy(toCopy, newFile);
+	if (!success) {
+		return false;
+	}
     }
 
-    for (QString f : files.split("%",QString::SkipEmptyParts)) {
+    for (QString f : files) {
         if(f.contains("overlays")) {
             QFile config(boot + "/config.txt");
             config.open(QIODevice::ReadWrite | QIODevice::Text);
@@ -424,9 +462,14 @@ bool ImageWriter::selectProject()
                 QFile::remove(boot + "/extlinux/extlinux.conf");
             QFile::copy(boot + "/" + f, boot + "/extlinux/extlinux.conf");
         } else {
-            if (QFile::exists(boot + "/" + f.split("/").takeLast()))
-                QFile::remove(boot + "/" + f.split("/").takeLast());
-            QFile::copy(boot + "/" + f, boot + "/" + f.split("/").takeLast());
+	    QString toCopy = boot + "/" + f;
+	    QString newFile = boot + "/" + f.split("/").takeLast();
+	    if (QFile::exists(newFile))
+		QFile::remove(newFile);
+	    bool success = QFile::copy(toCopy, newFile);
+	    if (!success) {
+		    return false;
+	    }
         }
     }
 
@@ -490,7 +533,7 @@ bool ImageWriter::selectProject()
 
         QFile f(boot+"/cmdline.txt");
         if (f.exists() && f.open(f.ReadOnly))
-        {
+	{
             cmdline = f.readAll().trimmed();
             f.close();
         }
@@ -588,9 +631,20 @@ bool ImageWriter::setupProject(QString binaries, QString project)
 
 void ImageWriter::setProjectFiles(QString kernel, QString preloader, QString filelist)
 {
+    if (kernel.startsWith("/boot/", Qt::CaseInsensitive)) {
+	    kernel.replace("/boot/", "", Qt::CaseInsensitive);
+    }
     _kernel = kernel;
+    if (preloader.startsWith("/boot/", Qt::CaseInsensitive)) {
+	    preloader.replace("/boot/", "", Qt::CaseInsensitive);
+    }
     _preloader = preloader;
-    _filelist = filelist;
+    for (QString file : filelist.split("%",QString::SkipEmptyParts)) {
+	    if (file.startsWith("/boot/", Qt::CaseInsensitive)) {
+		    file.replace("/boot/", "", Qt::CaseInsensitive);
+	    }
+	    _filelist << file;
+    }
 }
 
 

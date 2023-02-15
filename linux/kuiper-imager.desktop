@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Version=1.0
-Name=Imager
+Name=Kuiper Imager
 Comment=Kuiper Imager
 Icon=kuiper-imager
 Exec=kuiper-imager
