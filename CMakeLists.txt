@@ -70,8 +70,7 @@ endif()
 set(SOURCES "main.cpp" "imagewriter.cpp" "networkaccessmanagerfactory.cpp"
     "drivelistitem.cpp" "drivelistmodel.cpp" "drivelistmodelpollthread.cpp" "downloadthread.cpp" "downloadextractthread.cpp"
      "driveformatthread.cpp" "localfileextractthread.cpp" "powersaveblocker.cpp" "downloadstatstelemetry.cpp" "qml.qrc" "dependencies/sha256crypt/sha256crypt.c")
-
-find_package(Qt5 COMPONENTS Core Quick LinguistTools Svg OPTIONAL_COMPONENTS Widgets)
+find_package(Qt5 COMPONENTS Core Quick LinguistTools Svg Network OPTIONAL_COMPONENTS Widgets)
 if (Qt5Widgets_FOUND)
     set(EXTRALIBS ${EXTRALIBS} Qt5::Widgets)
 endif()
@@ -177,7 +176,7 @@ if (WIN32)
 
     add_custom_command(TARGET ${PROJECT_NAME}
         POST_BUILD
-        COMMAND "${WINDEPLOYQT}" --no-translations --no-webkit2 -opengl -no-angle --qmldir "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/deploy/kuiper-imager.exe")
+        COMMAND "${WINDEPLOYQT}" --no-translations --no-webkit2 -opengl -no-angle --qmldir "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/deploy/kuiper-imager.exe" --verbose=2)
 
     # Remove excess files
     add_custom_command(TARGET ${PROJECT_NAME}
@@ -259,5 +258,6 @@ if(${QT_TARGET_TYPE} STREQUAL "STATIC_LIBRARY")
 endif()
 
 include_directories(${CURL_INCLUDE_DIR} ${LibArchive_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR})
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt5::Core Qt5::Quick Qt5::Svg ${CURL_LIBRARIES} ${LibArchive_LIBRARIES} ${OPENSSL_LIBRARIES} ${ATOMIC_LIBRARY} ${EXTRALIBS})
+set(LINK_LIBS Qt5::Core Qt5::Quick Qt5::Svg Qt5::Network ${CURL_LIBRARIES} ${LibArchive_LIBRARIES} ${OPENSSL_LIBRARIES} ${ATOMIC_LIBRARY} ${EXTRALIBS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LINK_LIBS})
 #target_compile_definitions(${PROJECT_NAME} PRIVATE QT_QML_DEBUG)

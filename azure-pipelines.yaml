@@ -116,8 +116,7 @@ jobs:
           %MSYS2BASH% -lc "
           export PATH=%MSYS2%/mingw32/bin:%MSYS2%/usr/bin:%MSYS2%/opt/bin:$PATH &&
           ./Configure --cross-compile-prefix=i686-w64-mingw32- --prefix=$PWD/dist no-idea no-mdc2 no-rc5 shared mingw &&
-          make depend && make && make install_sw &&
-          cp libeay32.dll ../build/deploy/"
+          make depend && make && make install_sw"
         workingDirectory: $(Build.SourcesDirectory)/openssl-1.0.1c
         displayName: Compile OpenSSL
         env:
