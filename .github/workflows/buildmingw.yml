@@ -1,0 +1,41 @@
+name: windows-mingw build
+
+on: [push, pull_request]
+
+jobs:
+
+  make-exe-64:
+    runs-on: windows-2019
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Pull the Docker Image
+      run: docker pull alexandratr/kuiper-imager-build:latest
+
+    - name: Run Docker Image
+      shell: cmd
+      run: |
+            mkdir %GITHUB_WORKSPACE%\artifacts & echo %GITHUB_WORKSPACE%
+
+            set "BUILD_HOST=windows-2019"
+            set "USERNAME=github-actions"
+
+            for /F "tokens=1,2 delims=/" %%a in ("%GITHUB_REPOSITORY%") do (
+              set "GITHUB_REPO_OWNER=%%a"
+              set "GITHUB_REPO_NAME=%%b"
+            )
+
+            echo %BUILD_HOST% & echo %USERNAME% & echo %GITHUB_REPO_OWNER% & echo %GITHUB_REPO_NAME%
+            docker version
+            docker info
+            docker run ^
+                -e BRANCH=%GITHUB_REF_NAME% ^
+                -e HEAD_BRANCH=%GITHUB_HEAD_REF% ^
+                alexandratr/kuiper-imager-build:latest C:\msys64\usr\bin\bash.exe -c '/c/msys64/home/docker/build_mingw.sh build_imager'
+            docker ps -q -l > lastcontainer
+            set /p LAST=<lastcontainer
+            docker cp %LAST%:C:\kuiper-build.tar.gz %GITHUB_WORKSPACE%\artifacts
+    - uses: actions/upload-artifact@v2
+      with:
+        name: kuiper-imager-setup.tar.gz
+        path: ${{ github.workspace }}\artifacts\kuiper-build.tar.gz

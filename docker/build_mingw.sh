@@ -1,4 +1,5 @@
 #/bin/bash
+set -e
 LIBIIO_BRANCH=master
 LIBAD9361_BRANCH=master
 LIBAD9166_BRANCH=master
@@ -38,19 +39,21 @@ export AUTOCONF_OPTS="--prefix=/mingw64 \
 install_pacman_deps() {
 WINDEPS="\
 msys2-devel \
+wget \
+tar \
+mingw-w64-cross-binutils
 mingw-w64-i686-toolchain \
 mingw-w64-i686-cmake \
 mingw-w64-i686-ninja \
 mingw-w64-i686-qt5-winextras \
 mingw-w64-i686-qt5 \
-mingw-w64-i686-qt5-3d \
+mingw-w64-i686-qt5-base \
+mingw-w64-i686-qt5-quickcontrols2 \
 mingw-w64-i686-gdb \
 mingw-w64-i686-mesa \
-mingw-w64-i686-qt-creator \
 mingw-w64-i686-nsis"
 pacman -S --noconfirm --needed $WINDEPS
 }
-
 
 clone() {
     cd /c/
@@ -59,8 +62,9 @@ clone() {
 
 create_deploy() {
 mkdir -p /c/adi-kuiper-imager/build/deploy
-cp /c/msys64/mingw32/bin/{libbrotlicommon.dll,libbrotlidec.dll,libbrotlienc.dll,libdouble-conversion.dll,libfreetype-6.dll,libglib-2.0-0.dll,libgraphite2.dll,libharfbuzz-0.dll,libicudt*.dll,libicuin*.dll,libicuuc*.dll,libintl-8.dll,liblzma-5.dll,libmd4c.dll,libpcre-2*.dll,libpng16-16.dll,zlib1.dll,libbz2-1.dll,libiconv-2.dll,liblz4.dll,libxml2-2.dll,libzstd.dll,libgcc_s_dw2-1.dll,libstdc++-6.dll,libwinpthread-1.dll libssl*.dll libcrypto*.dll} /c/adi-kuiper-imager/build/deploy
-#cp /c/OpenSSL-Win32/libeay32.dll /c/adi-kuiper-imager/build/deploy
+cp /c/msys64/mingw32/bin/{libb2-1.dll,libbrotlicommon.dll,libbrotlidec.dll,libbrotlienc.dll,libdouble-conversion.dll,libfreetype-6.dll,libglib-2.0-0.dll,libgraphite2.dll,libharfbuzz-0.dll,libicu*.dll,libintl-8.dll,liblzma-5.dll,libmd4c.dll,libpcre*.dll,libpng16-16.dll,zlib1.dll,libbz2-1.dll,libiconv-2.dll,liblz4.dll,libxml2-2.dll,libzstd.dll,libgcc_s_dw2-1.dll,libstdc++-6.dll,libwinpthread-1.dll} /c/adi-kuiper-imager/build/deploy
+cp /c/msys64/mingw32/bin/Qt5QuickControls2.dll /c/adi-kuiper-imager/build/deploy
+cp /c/msys64/mingw32/bin/Qt5QuickTemplates2.dll /c/adi-kuiper-imager/build/deploy
 }
 
 build() {
@@ -73,11 +77,16 @@ create_installer() {
 makensis.exe /c/adi-kuiper-imager/build/kuiper-imager.nsi
 }
 
+package_build_dir() {
+tar -czvf /c/kuiper-build.tar.gz /c/adi-kuiper-imager/build
+}
+
 build_imager() {
     clone
     build
     create_deploy
     create_installer
+    package_build_dir
 }
 
 init_env

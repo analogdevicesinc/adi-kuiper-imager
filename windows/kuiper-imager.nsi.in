@@ -213,7 +213,6 @@ ${INSTALL_TYPE}
 SetOverwrite ifnewer
 SetOutPath "$INSTDIR"
 
-File "deploy\libeay32.dll"
 File "deploy\libbrotlicommon.dll"
 File "deploy\libbrotlidec.dll"
 File "deploy\libbrotlienc.dll"
@@ -691,7 +690,6 @@ SectionEnd
 
 Section Uninstall
 ${INSTALL_TYPE}
-Delete "$INSTDIR\libeay32.dll"
 Delete "$INSTDIR\libbrotlicommon.dll"
 Delete "$INSTDIR\libbrotlidec.dll"
 Delete "$INSTDIR\libbrotlienc.dll"
