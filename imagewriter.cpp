@@ -37,6 +37,7 @@
 #endif
 
 #ifdef Q_OS_WIN
+#include "windows/winfile.h"
 #include <windows.h>
 #include <winioctl.h>
 #include <wlanapi.h>
@@ -46,6 +47,10 @@
 
 #include <QWinTaskbarButton>
 #include <QWinTaskbarProgress>
+#endif
+
+#ifdef Q_OS_DARWIN
+#include "mac/macfile.h"
 #endif
 
 #ifdef Q_OS_LINUX
@@ -361,6 +366,9 @@ bool ImageWriter::handlePreloader(QString preloader, QString boot)
 	bool bootLoaderWritten = false;
 #ifdef Q_OS_WIN
 	WinFile bootloader, volumeFile, driveVolumeFile;
+#elif defined(Q_OS_DARWIN)
+	MacFile volumeFile;
+	MacFile bootloader;
 #else
 	QFile bootloader;
 	QFile volumeFile;

@@ -1525,14 +1525,13 @@ ApplicationWindow {
     }
 
     /* Utility functions */
-    // TBD all things are added in the main menu instead of their separate menus
     function httpReplyReady(url, type, response) {
         console.log("Reply url: " + url);
         console.log("Reply type: " + type);
-        //console.log("Reply response: " + response);
         if (response == "") {
             return;
         }
+//        console.log("Reply response: " + response);
         var list = JSON.parse(response)
         switch (type) {
             case "oslist":
@@ -1563,6 +1562,8 @@ ApplicationWindow {
                 for (var i in oslist) {
                     m.append(oslist[i])
                 }
+                osswipeview.itemAt(osswipeview.currentIndex+1).currentIndex = 0
+                osswipeview.incrementCurrentIndex()
                 break;
             case "platforms":
                 var archlist;
@@ -1602,7 +1603,7 @@ ApplicationWindow {
     }
 
     function httpRequest(url, requestType) {
-        console.log("[SENDING] httpRequest for" + requestType)
+        console.log("[SENDING] httpRequest for " + requestType)
         networkRequestManager.getRequest(url, requestType);
     }
 
@@ -1811,9 +1812,6 @@ ApplicationWindow {
 
                 httpRequest(suburl, "ositem")
                 console.log("[SENT] httpRequest for ositem")
-
-                osswipeview.itemAt(osswipeview.currentIndex+1).currentIndex = (selectFirstSubitem === true) ? 0 : -1
-                osswipeview.incrementCurrentIndex()
                 btnOs.text += d.name + " : "
             }
         } else if (d.url === "") {
