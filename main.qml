@@ -1371,6 +1371,7 @@ ApplicationWindow {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
+                    btnWrite.enabled = false
                     writeActionPopup.close()
                 }
             }
@@ -1413,6 +1414,7 @@ ApplicationWindow {
                 Button {
                     text: qsTr("No")
                     onClicked: {
+                        btnWrite.enabled = false
                         writeActionPopup.close()
                     }
                     Material.foreground: "#ffffff"
@@ -1425,6 +1427,7 @@ ApplicationWindow {
                 Button {
                     text: qsTr("Yes")
                     onClicked: {
+                        btnWrite.enabled = false
                         writeActionPopup.close()
                         btnOs.state = "configure_existing"
                         imageWriter.setProjectListUrl("")
