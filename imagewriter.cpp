@@ -242,11 +242,13 @@ bool ImageWriter::compareKuiperJsonVersions()
 void ImageWriter::enableDriveListTimer(bool start)
 {
 	if (start) {
-		_drivelisttimer.start(100);
+		_drivelisttimer.start(300);
+		startDriveListPolling();
 	} else {
 		if (_drivelisttimer.isActive()) {
 			_drivelisttimer.stop();
 		}
+		stopDriveListPolling();
 	}
 }
 

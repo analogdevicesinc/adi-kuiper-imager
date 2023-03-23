@@ -1751,13 +1751,10 @@ ApplicationWindow {
     }
 
     function driveListUpdate() {
-        imageWriter.startDriveListPolling()
         var d = sourceList.selectedItem
         if ((d && !d.isReadOnly) || !d) {
             selectDstItem(d)
         }
-
-        imageWriter.stopDriveListPolling()
     }
 
     function newSublist() {
