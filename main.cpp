@@ -13,6 +13,7 @@
 #include "imagewriter.h"
 #include "drivelistmodel.h"
 #include "networkaccessmanagerfactory.h"
+#include "networkrequestmanager.h"
 #include <QMessageLogContext>
 #include <QQuickWindow>
 #include <QTranslator>
@@ -60,7 +61,7 @@ int main(int argc, char *argv[])
     app.setApplicationName("Imager");
     app.setWindowIcon(QIcon(":/icons/Kuiper_ico.png"));
     ImageWriter imageWriter;
-    NetworkAccessManagerFactory namf;
+    NetworkRequestManager *networkRequestManager = new NetworkRequestManager(&app);
     QQmlApplicationEngine engine;
     QTranslator translator;
     QString customQm;
@@ -207,8 +208,8 @@ int main(int argc, char *argv[])
     if (!url.isEmpty())
         imageWriter.setSrc(url);
     imageWriter.setEngine(&engine);
-    engine.setNetworkAccessManagerFactory(&namf);
     engine.rootContext()->setContextProperty("imageWriter", &imageWriter);
+    engine.rootContext()->setContextProperty("networkRequestManager", networkRequestManager);
     engine.rootContext()->setContextProperty("driveListModel", imageWriter.getDriveList());
     engine.rootContext()->setContextProperty("KUIPER_RPI_README", KUIPER_RPI_README);
     engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
@@ -227,7 +228,8 @@ int main(int argc, char *argv[])
     qmlwindow->connect(&imageWriter, SIGNAL(finalizing()), qmlwindow, SLOT(onFinalizing()));
     qmlwindow->connect(&imageWriter, SIGNAL(networkOnline()), qmlwindow, SLOT(fetchOSlist()));
     qmlwindow->connect(&imageWriter, SIGNAL(driveListTimeout()), qmlwindow, SLOT(driveListUpdate()));
-    qmlwindow->connect(qmlwindow, SIGNAL(cleanupCache()), &namf, SLOT(forceCleanupCache()));
+    qmlwindow->connect(networkRequestManager, SIGNAL(replyFinished(QVariant,QVariant,QVariant)),
+					qmlwindow, SLOT(httpReplyReady(QVariant,QVariant,QVariant)));
 
 #ifndef QT_NO_WIDGETS
     /* Set window position */

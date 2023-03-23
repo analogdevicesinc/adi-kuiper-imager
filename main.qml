@@ -1525,27 +1525,85 @@ ApplicationWindow {
     }
 
     /* Utility functions */
-    function httpRequest(url, callback) {
-        var xhr = new XMLHttpRequest();
-        xhr.timeout = 5000
-        xhr.onreadystatechange = (function(x) {
-            return function() {
-                if (x.readyState === x.DONE) {
-                    if (x.status === 200 || x.status === 0) {
-                        callback(x);
-                    } else if (x.status === 304) {
-                        // https://www.qt.io/blog/2011/04/29/http-caching-with-qt
-                        console.log("Cache fault, 304 error. Force cache cleanup.")
-                        window.cleanupCache();
-                        // force a cache clean
-                    } else {
-                        onError(qsTr("Error downloading OS list from Internet"));
+    // TBD all things are added in the main menu instead of their separate menus
+    function httpReplyReady(url, type, response) {
+        console.log("Reply url: " + url);
+        console.log("Reply type: " + type);
+        //console.log("Reply response: " + response);
+        if (response == "") {
+            return;
+        }
+        var list = JSON.parse(response)
+        switch (type) {
+            case "oslist":
+                var oslist = oslistFromJson(list)
+                if (oslist === false){
+                    return
+                }
+
+                for (var i in oslist) {
+                    osmodel.insert(osmodel.count-3, oslist[i])
+                }
+
+                if ("imager" in list) {
+                    var imager = list["imager"]
+                    if ("latest_version" in imager && "url" in imager) {
+                        if (!imageWriter.isEmbeddedMode() && imageWriter.isVersionNewer(imager["latest_version"])) {
+                            updatepopup.url = imager["url"]
+                            updatepopup.openPopup()
+                        }
                     }
                 }
+                break;
+            case "ositem":
+                var m = newSublist()
+                var oslist = oslistFromJson(list)
+                if (oslist === false)
+                    return
+                for (var i in oslist) {
+                    m.append(oslist[i])
                 }
-        })(xhr)
-        xhr.open("GET", url);
-        xhr.send()
+                break;
+            case "platforms":
+                var archlist;
+                var platformlist = list.platforms
+                for (var i in platformlist) {
+                    if (platformlist[i].platform == selectedProjectItem.name){
+                        archlist = platformlist[i]["architectures"]
+                    }
+                }
+                var newlist = subprojlist.createObject(projswipeview)
+                projswipeview.addItem(newlist)
+                var sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
+                for (var i in archlist){
+                    archlist[i].type = "architectures"
+                    sublist.append(archlist[i])
+                }
+                imageWriter.setProjectSearch(item.name,0)
+                projswipeview.incrementCurrentIndex()
+                break;
+            case "projects":
+                var newlist = subprojlist.createObject(projswipeview)
+                projswipeview.addItem(newlist)
+                var sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
+                var projlist = list.projects
+                for (var i in projlist) {
+                    if (projlist[i].platform == imageWriter.getProjectSearch(0) &&
+                        projlist[i].architecture == imageWriter.getProjectSearch(1) &&
+                        projlist[i].board == imageWriter.getProjectSearch(2)){
+                        projlist[i].type = "project";
+                        sublist.append(projlist[i])
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    function httpRequest(url, requestType) {
+        console.log("[SENDING] httpRequest for" + requestType)
+        networkRequestManager.getRequest(url, requestType);
     }
 
     /* Slots for signals imagewrite emits */
@@ -1688,27 +1746,8 @@ ApplicationWindow {
     }
 
     function fetchOSlist() {
-        httpRequest(imageWriter.constantOsListUrl(), function (x) {
-            var o = JSON.parse(x.responseText)
-            var oslist = oslistFromJson(o)
-            if (oslist === false){
-                return
-            }
-
-            for (var i in oslist) {
-                osmodel.insert(osmodel.count-3, oslist[i])
-            }
-
-            if ("imager" in o) {
-                var imager = o["imager"]
-                if ("latest_version" in imager && "url" in imager) {
-                    if (!imageWriter.isEmbeddedMode() && imageWriter.isVersionNewer(imager["latest_version"])) {
-                        updatepopup.url = imager["url"]
-                        updatepopup.openPopup()
-                    }
-                }
-            }
-        })
+        httpRequest(imageWriter.constantOsListUrl(), "oslist")
+        console.log("[SENT] httpRequest for oslist")
     }
 
     function driveListUpdate() {
@@ -1772,17 +1811,9 @@ ApplicationWindow {
             {
                 ospopup.categorySelected = d.name
                 var suburl = d.subitems_url
-                var m = newSublist()
 
-                httpRequest(suburl, function (x) {
-                    var o = JSON.parse(x.responseText)
-                    var oslist = oslistFromJson(o)
-                    if (oslist === false)
-                        return
-                    for (var i in oslist) {
-                        m.append(oslist[i])
-                    }
-                })
+                httpRequest(suburl, "ositem")
+                console.log("[SENT] httpRequest for ositem")
 
                 osswipeview.itemAt(osswipeview.currentIndex+1).currentIndex = (selectFirstSubitem === true) ? 0 : -1
                 osswipeview.incrementCurrentIndex()
@@ -1871,24 +1902,9 @@ ApplicationWindow {
                 var archlist
                 var listurl = imageWriter.getProjectListUrl()
                 if (listurl != "") {
-                    httpRequest(listurl, function (x) {
-                        var list = JSON.parse(x.responseText)
-                        var platformlist = list.platforms
-                        for (var i in platformlist) {
-                            if (platformlist[i].platform == item.name){
-                                archlist = platformlist[i]["architectures"]
-                            }
-                        }
-                        var newlist = subprojlist.createObject(projswipeview)
-                        projswipeview.addItem(newlist)
-                        var sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
-                        for (var i in archlist){
-                            archlist[i].type = "architectures"
-                            sublist.append(archlist[i])
-                        }
-                        imageWriter.setProjectSearch(item.name,0)
-                        projswipeview.incrementCurrentIndex()
-                    })
+                    selectedProjectItem = item;
+                    httpRequest(listurl, "platforms")
+                    console.log("[SENT] httpRequest for platforms")
                 } else if (imageWriter.hasKuiper()) {
                     archlist = JSON.parse(imageWriter.getPlatformList(item.name))
                     var newlist = subprojlist.createObject(projswipeview)
@@ -1950,28 +1966,18 @@ ApplicationWindow {
                 break
 
             default:
-                var newlist = subprojlist.createObject(projswipeview)
-                projswipeview.addItem(newlist)
-                var sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
                 imageWriter.setProjectSearch(item.board,2)
                 item.type = "boards";
 
-                var listurl = imageWriter.getProjectListUrl()
+                listurl = imageWriter.getProjectListUrl()
                 if (listurl != "") {
-                    httpRequest(listurl, function (x) {
-                        var list = JSON.parse(x.responseText)
-                        var projlist = list.projects
-                        for (var i in projlist) {
-                            if (projlist[i].platform == imageWriter.getProjectSearch(0) &&
-                                projlist[i].architecture == imageWriter.getProjectSearch(1) &&
-                                projlist[i].board == imageWriter.getProjectSearch(2)){
-                                projlist[i].type = "project";
-                                sublist.append(projlist[i])
-                            }
-                        }
-
-                    })
+                    console.log("listurl:" + listurl + "test")
+                    httpRequest(listurl, "projects")
+                    console.log("[SENT] httpRequest for projects")
                 } else if (imageWriter.hasKuiper()) {
+                    var newlist = subprojlist.createObject(projswipeview)
+                    projswipeview.addItem(newlist)
+                    var sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
                     var projlist = JSON.parse(imageWriter.getProjectList())
                     for (var i in projlist) {
                         projlist[i].type = "project";
