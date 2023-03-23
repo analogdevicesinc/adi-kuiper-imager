@@ -187,6 +187,7 @@ protected:
     void setupBootWrite();
 private:
     int compareVersions(std::string v1, std::string v2);
+    bool handlePreloader(QString preloader, QString boot);
 };
 
 #endif // IMAGEWRITER_H

@@ -356,90 +356,160 @@ QByteArray ImageWriter::scanProjectList(QString projectPath, QString type)
     return QJsonDocument(projectList).toJson();
 }
 
-bool ImageWriter::selectProject()
+bool ImageWriter::handlePreloader(QString preloader, QString boot)
 {
-    QString kernel= _kernel;
-    QString preloader = _preloader;
-    QStringList files = _filelist;
+	bool bootLoaderWritten = false;
 #ifdef Q_OS_WIN
-    WinFile bootloader, volumeFile;
+	WinFile bootloader, volumeFile, driveVolumeFile;
 #else
-    QFile bootloader;
-    QFile volumeFile;
+	QFile bootloader;
+	QFile volumeFile;
 #endif
-    static char bootloaderBuf[_numSectors * _sectorSize];
-    qint64 _seek_target = _startSector * _sectorSize;
-    QByteArray partition = _dst.toUtf8();
-    QString boot = _getsStorageInfo("BOOT", "path");
+	static char bootloaderBuf[_numSectors * _sectorSize];
+	qint64 _seek_target = _startSector * _sectorSize;
+	QByteArray partition = _dst.toUtf8();
 
-    if (preloader != "") {
-        bootloader.setFileName(boot + "/" +preloader);
-        if (!bootloader.open(QIODevice::ReadWrite)) {
-            qDebug() << "Can't open bootloader file";
-            return false;
-        }
+	bootloader.setFileName(boot + "/" +preloader);
+	if (!bootloader.open(QIODevice::ReadWrite)) {
+	    qDebug() << "Can't open bootloader file";
+	    return false;
+	}
 
-// TBD does not work for all INTEL (works for adrv9009)
-        bootloader.read(bootloaderBuf, _numSectors * _sectorSize);
-        bootloader.close();
-
-#ifdef Q_OS_LINUX
-        if (isdigit(partition.at(partition.length()-1)))
-            partition += "p3";
-        else
-            partition += "3";
-#endif
+	bootloader.read(bootloaderBuf, _numSectors * _sectorSize);
+	bootloader.close();
 
 	volumeFile.setFileName(partition);
 
+/* Unmount and prepare Windows device */
+#ifdef Q_OS_WIN
+	auto l = Drivelist::ListStorageDevices();
+	QByteArray devlower = partition.toLower();
+	QByteArray driveLetter;
+	for (auto i : l) {
+	    if (QByteArray::fromStdString(i.device).toLower() == devlower) {
+		if (i.mountpoints.size() == 1) {
+		    driveLetter = QByteArray::fromStdString(i.mountpoints.front());
+		    if (driveLetter.endsWith("\\"))
+			driveLetter.chop(1);
+		} else if (i.mountpoints.size() > 1) {
+		    emit error(tr("Error removing existing partitions"));
+		    return false;
+		} else {
+		    qDebug() << "Device no longer has any volumes. Nothing to lock.";
+		}
+	    }
+	}
+
+	if (!driveLetter.isEmpty()) {
+	    driveVolumeFile.setFileName("\\\\.\\"+driveLetter);
+	    if (driveVolumeFile.open(QIODevice::ReadWrite))
+		driveVolumeFile.lockVolume();
+	}
+#endif
+
+/* Prepare Linux partition name */
 #ifdef Q_OS_LINUX
-	auto a = "fdsfds";
+	if (isdigit(partition.at(partition.length()-1)))
+	    partition += "p3";
+	else
+	    partition += "3";
+#endif
+
+/* Open Darwin Partition with authentication rights */
+#ifdef Q_OS_DARWIN
+	partition.replace("/dev/disk", "/dev/rdisk");
+	auto authopenresult = volumeFile.authOpen(partition);
+
+	if (authopenresult == volumeFile.authOpenCancelled) {
+	    /* User cancelled authentication */
+	    emit error(tr("Authentication cancelled"));
+	    return false;
+	} else if (authopenresult == volumeFile.authOpenError) {
+	    QString msg = tr("Error running authopen to gain access to disk device '%1'").arg(QString(partition));
+	    msg += "<br>"+tr("Please verify if 'Kuiper Imager' is allowed access to 'removable volumes' in privacy settings (under 'files and folders' or alternatively give it 'full disk access').");
+	    QProcess::execute("open x-apple.systempreferences:com.apple.preference.security?Privacy_RemovableVolume");
+	    emit error(msg);
+	    return false;
+	}
+#else
+	/* Any OS but Darwin */
+	if (!volumeFile.open(QIODevice::ReadWrite | QIODevice::Unbuffered)) {
+#ifdef Q_OS_LINUX
 #ifndef QT_NO_DBUS
+	/* Ask udisks2 to open the Linux partition with authentication rights */
 	UDisks2Api udisks;
 	int fd = udisks.authOpen(partition);
-	if (fd != -1)
-	{
+	if (fd != -1) {
 	    volumeFile.open(fd, QIODevice::ReadWrite | QIODevice::Unbuffered, QFileDevice::AutoCloseHandle);
-//	if (volumeFile.open(QIODevice::ReadWrite | QIODevice::Unbuffered)) {
-
-//	}
-	}
-	else
+	} else
 #endif
 	{
 	    qDebug() << tr("Failed to open bootloader partition '%1'.").arg(QString(partition));
 	    return false;
 	}
 #endif
-
-	// TBD request access auth
-//        if (!volumeFile.open(QIODevice::WriteOnly)) {
-//	    qDebug() << "Failed to open bootloader partition";
-//	    qDebug() << volumeFile.errorString();
-//            return false;
-//        }
-#ifdef Q_OS_WIN
-        if(!volumeFile.lockVolume())
-            return false;
-        if(!volumeFile.seek(_seek_target))
-            return false;
+	}
 #endif
-        if (!volumeFile.write(bootloaderBuf, _numSectors * _sectorSize)) {
-            qDebug() << "Failed to write the bootloader to partition";
+
+#ifdef Q_OS_WIN
+	if(!volumeFile.lockVolume())
+	    return false;
+	if(!volumeFile.seek(_seek_target))
+	    return false;
+#endif
+	/* Try to write the bootloader on the partition on any OS */
+	if (!volumeFile.write(bootloaderBuf, _numSectors * _sectorSize)) {
+	    qDebug() << "Failed to write the bootloader to partition";
 	    volumeFile.close();
-            return false;
-        }
-        volumeFile.close();
+	    bootLoaderWritten = false;
+	} else {
+	    bootLoaderWritten = true;
+	}
+	volumeFile.close();
+#ifdef Q_OS_LINUX
+#ifndef QT_NO_DBUS
+	UDisks2Api udisks;
+	/* Ask udisks2 to mount back the partitions */
+	for (int i = 1; i < 3; i++) {
+		auto pMount = QString(partition).replace(partition.length()-1, 1, i+'0');
+		QString retPath = udisks.mountDevice(pMount);
+		if (retPath == "") {
+		    qDebug() << tr("Failed to mount device after writing bootloader");
+		} else {
+		    qDebug() << tr("Mount %1 at mountpoint %2").arg(pMount, retPath);
+		}
+	}
+#endif
+#endif
+	if (!bootLoaderWritten) {
+	    return bootLoaderWritten;
+	}
+	return true;
+}
+
+bool ImageWriter::selectProject()
+{
+    bool bootLoaderWritten = false;
+    QString kernel= _kernel;
+    QString preloader = _preloader;
+    QStringList files = _filelist;
+    QString boot = _getsStorageInfo("BOOT", "path");
+
+    if (preloader != "") {
+	bool preloaderSuccess = handlePreloader(preloader, boot);
     }
 
     /* Copy image from common */
     if (kernel != "") {
 	QString toCopy = boot + "/" + kernel;
 	QString newFile = boot + "/" + kernel.split("/").takeLast();
-	if (QFile::exists(newFile))
-	    QFile::remove(newFile);
-	bool success = QFile::copy(toCopy, newFile);
+	QFile from(toCopy);
+	QFile target(newFile);
+	if (target.exists())
+	    bool rmSuccess = target.remove();
+	bool success = from.copy(target.fileName());
 	if (!success) {
+		qDebug() << "[ERROR] Copy image from common: " << from.errorString();
 		return false;
 	}
     }
@@ -675,7 +745,8 @@ bool ImageWriter::startProjectConfig()
     for (auto file : _binaries){
         if (file.contains("preloader_bootloader")) {
             bootloader.setFileName(file);
-            if (!bootloader.open(QIODevice::ReadWrite)) {
+	    bool ret = bootloader.open(QIODevice::ReadWrite);
+	    if (!ret) {
                 qDebug() << "Can't open bootloader file";
                 return false;
             }
