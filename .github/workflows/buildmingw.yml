@@ -35,7 +35,7 @@ jobs:
             docker ps -q -l > lastcontainer
             set /p LAST=<lastcontainer
             docker cp %LAST%:C:\kuiper-build.tar.gz %GITHUB_WORKSPACE%\artifacts
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: kuiper-imager-setup.tar.gz
         path: ${{ github.workspace }}\artifacts\kuiper-build.tar.gz
