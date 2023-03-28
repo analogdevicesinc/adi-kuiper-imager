@@ -15,6 +15,8 @@ ApplicationWindow {
     visible: true
 
     signal cleanupCache();
+    property var selectedProjectItem;
+    property var selectedBoardItem;
 
     width:  640
     height: 480
@@ -1583,7 +1585,7 @@ ApplicationWindow {
                     archlist[i].type = "architectures"
                     sublist.append(archlist[i])
                 }
-                imageWriter.setProjectSearch(item.name,0)
+                imageWriter.setProjectSearch(selectedProjectItem.name,0)
                 projswipeview.incrementCurrentIndex()
                 break;
             case "projects":
@@ -1599,6 +1601,17 @@ ApplicationWindow {
                         sublist.append(projlist[i])
                     }
                 }
+
+                btnTarget.text += selectedBoardItem.board + ": "
+                var strFindIdx = selectedBoardItem.board.indexOf("rpi")
+                if (strFindIdx === 0) {
+                    newlist = subprojlist.createObject(projswipeview)
+                    projswipeview.addItem(newlist)
+                    sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
+                    var readme = {"name": KUIPER_RPI_README, "type": "BACK", "isReadme": true}
+                    sublist.append(readme);
+                }
+                projswipeview.incrementCurrentIndex()
                 break;
             default:
                 break;
@@ -1964,12 +1977,12 @@ ApplicationWindow {
                 break
 
             default:
+                selectedBoardItem = item;
                 imageWriter.setProjectSearch(item.board,2)
                 item.type = "boards";
 
                 listurl = imageWriter.getProjectListUrl()
                 if (listurl != "") {
-                    console.log("listurl:" + listurl + "test")
                     httpRequest(listurl, "projects")
                     console.log("[SENT] httpRequest for projects")
                 } else if (imageWriter.hasKuiper()) {
@@ -1982,21 +1995,22 @@ ApplicationWindow {
                         sublist.append(projlist[i])
 
                     }
+
+                    btnTarget.text += item.board + ": "
+                    var strFindIdx = item.board.indexOf("rpi")
+                    if (strFindIdx === 0) {
+                        newlist = subprojlist.createObject(projswipeview)
+                        projswipeview.addItem(newlist)
+                        sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
+                        var readme = {"name": KUIPER_RPI_README, "type": "BACK", "isReadme": true}
+                        sublist.append(readme);
+                    }
+                    projswipeview.incrementCurrentIndex()
                 } else {
                         onError("Can't configure list of supported projects. 
                     \nJSON file not found on BOOT partition.\n
                     JSON file not found online.")
                 }
-                btnTarget.text += item.board + ": "
-                var strFindIdx = item.board.indexOf("rpi")
-                if (strFindIdx === 0) {
-                    newlist = subprojlist.createObject(projswipeview)
-                    projswipeview.addItem(newlist)
-                    sublist = projswipeview.itemAt(projswipeview.currentIndex + 1).model
-                    var readme = {"name": KUIPER_RPI_README, "type": "BACK", "isReadme": true}
-                    sublist.append(readme);
-                }
-                projswipeview.incrementCurrentIndex()
                 break;
         }
     }
